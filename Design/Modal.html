@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immo-Score | Importation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { primary: '#064E3B', accent: '#10B981', ai: '#6366f1' },
+                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 h-screen overflow-hidden font-sans">
+
+    <!-- FOND FLOUTÉ (Simulation de l'arrière plan dashboard) -->
+    <div class="absolute inset-0 bg-[url('https://placehold.co/1920x1080/f1f5f9/cbd5e1?text=Dashboard+Background')] bg-cover filter blur-sm opacity-50 z-0"></div>
+
+    <!-- OVERLAY -->
+    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-10 flex items-center justify-center p-4">
+        
+        <!-- MAIN MODAL -->
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden border border-slate-200 transform transition-all scale-100">
+            
+            <!-- HEADER: INPUT AREA -->
+            <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center">
+                        <span class="w-8 h-8 rounded-lg bg-ai/10 text-ai flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </span>
+                        Nouvelle Analyse
+                    </h3>
+                    <button class="text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                </div>
+
+                <!-- INPUT BAR -->
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400 group-focus-within:text-ai transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    </div>
+                    <input type="text" 
+                           class="block w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-ai/20 focus:border-ai transition-all shadow-sm font-medium text-lg" 
+                           placeholder="Collez l'URL Immoweb ou Logic-Immo ici..." 
+                           value="https://www.immoweb.be/fr/annonce/maison/a-vendre/liege/4000/10842">
+                    
+                    <!-- BOUTON ANALYSER ABSOLU -->
+                    <button class="absolute right-2 top-2 bottom-2 bg-slate-900 text-white px-4 rounded-lg font-medium text-sm hover:bg-ai transition-colors flex items-center shadow-lg">
+                        Analyser <span class="ml-2 text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded text-xs font-mono">↵</span>
+                    </button>
+                </div>
+                
+                <div class="flex space-x-4 mt-3 ml-1 text-xs text-slate-400 font-medium">
+                    <span class="flex items-center text-emerald-600"><svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Immoweb supporté</span>
+                    <span class="flex items-center hover:text-slate-600 cursor-pointer transition-colors">Test avec un bien démo</span>
+                </div>
+            </div>
+
+            <!-- CONTENT: PROCESSING STATE (FEEDBACK VISUEL) -->
+            <div class="p-6 bg-white min-h-[300px]">
+                
+                <!-- ÉTAPE 1: DÉTECTION DU BIEN -->
+                <div class="flex items-start mb-6 animate-pulse">
+                    <div class="h-16 w-24 bg-slate-200 rounded-lg mr-4 flex-shrink-0"></div> <!-- Image Skeleton -->
+                    <div class="flex-1 space-y-3 pt-1">
+                        <div class="h-4 bg-slate-200 rounded w-3/4"></div> <!-- Title Skeleton -->
+                        <div class="h-3 bg-slate-200 rounded w-1/2"></div> <!-- Subtitle Skeleton -->
+                    </div>
+                </div>
+
+                <!-- ÉTAPE 2: CHECKLIST PROGRESSION -->
+                <div class="space-y-4 border-t border-slate-100 pt-6">
+                    <!-- Step 1: Done -->
+                    <div class="flex items-center justify-between group">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <span class="text-sm font-medium text-slate-700">Extraction des données structurées</span>
+                        </div>
+                        <span class="text-xs font-mono text-emerald-600 bg-emerald-50 px-2 py-1 rounded">230ms</span>
+                    </div>
+
+                    <!-- Step 2: Processing -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="relative w-6 h-6 mr-3 flex items-center justify-center">
+                                <div class="absolute inset-0 border-2 border-indigo-200 rounded-full"></div>
+                                <div class="absolute inset-0 border-2 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                            </div>
+                            <span class="text-sm font-medium text-slate-800">Analyse IA des photos (Claude Vision)</span>
+                        </div>
+                        <span class="text-xs font-medium text-indigo-600 animate-pulse">En cours...</span>
+                    </div>
+
+                    <!-- Step 3: Pending -->
+                    <div class="flex items-center justify-between opacity-40">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full border-2 border-slate-200 mr-3"></div>
+                            <span class="text-sm text-slate-500">Calculs de rentabilité & Cashflow</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TERMINAL LOG (TOUCHE GEEK/TECH) -->
+                <div class="mt-8 bg-slate-900 rounded-lg p-4 font-mono text-xs text-slate-300 shadow-inner">
+                    <div class="flex items-center mb-2 border-b border-slate-700 pb-2">
+                        <span class="w-2 h-2 bg-red-500 rounded-full mr-1.5"></span>
+                        <span class="w-2 h-2 bg-yellow-500 rounded-full mr-1.5"></span>
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <span class="ml-auto text-slate-500">logs</span>
+                    </div>
+                    <div class="space-y-1">
+                        <p>> Initializing Immo-Scraper...</p>
+                        <p class="text-green-400">> Found: "Maison Liège 4000"</p>
+                        <p>> Image analysis: <span class="text-yellow-400">Warning: Roof condition detected</span></p>
+                    </div>
+                </div>
+
+            </div>
+            
+        </div>
+    </div>
+</body>
+</html>

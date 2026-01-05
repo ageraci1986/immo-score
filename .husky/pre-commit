@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Clean temporary files before commit
+echo "🧹 Cleaning temporary files..."
+./scripts/cleanup-temp-files.sh
+
+# Run lint-staged (linting and formatting)
+npx lint-staged
+
+# Type checking
+echo "🔎 Type checking..."
+npm run type-check
+
+echo "✅ Pre-commit checks passed!"

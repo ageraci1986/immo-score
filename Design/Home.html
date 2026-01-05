@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immo-Score | Welcome</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { primary: '#064E3B', accent: '#10B981', ai: '#6366f1' },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- BACKGROUND GRID DECORATION -->
+    <div class="absolute inset-0 bg-grid-pattern bg-[length:40px_40px] opacity-[0.4] z-0 pointer-events-none"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-slate-50 via-transparent to-transparent z-0"></div>
+
+    <!-- MAIN CONTAINER -->
+    <main class="relative z-10 w-full max-w-6xl mx-auto px-6 py-12 flex flex-col items-center justify-center min-h-screen">
+
+        <!-- HEADER / LOGO -->
+        <div class="mb-8 animate-fade-in-down">
+            <span class="inline-flex items-center justify-center p-3 bg-white rounded-2xl shadow-lg shadow-emerald-100 border border-emerald-50 mb-6">
+                <span class="text-3xl">🏡</span>
+            </span>
+        </div>
+
+        <!-- HERO SECTION -->
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
+                Immo-<span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-400">Score</span>
+            </h1>
+            <p class="text-xl text-slate-500 font-medium leading-relaxed">
+                L'Analyse Immobilière Intelligente <span class="text-ai font-semibold">Propulsée par l'IA</span>.
+                <br>Transformez la data en décisions d'investissement rentables.
+            </p>
+
+            <div class="mt-8 flex items-center justify-center gap-4">
+                <button class="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl shadow-slate-200 hover:bg-slate-800 hover:-translate-y-1 transition-all flex items-center">
+                    Voir le Dashboard
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </button>
+                <button class="bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Documentation
+                </button>
+            </div>
+            
+            <div class="mt-6 flex items-center justify-center gap-2 text-sm text-slate-400">
+                <span class="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                Architecture robuste & prête à l'emploi
+            </div>
+        </div>
+
+        <!-- FEATURE CARDS (GLASS EFFECT) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-16">
+            
+            <!-- Card 1 -->
+            <div class="group bg-white/60 backdrop-blur-md border border-slate-200 p-8 rounded-2xl hover:shadow-xl hover:shadow-indigo-100/50 transition-all hover:-translate-y-1">
+                <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">🤖</div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Analyse IA</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                    Évaluation automatique de l'état du bien via <span class="text-indigo-600 font-medium">Claude Vision</span>. Détection des travaux et risques.
+                </p>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="group bg-white/60 backdrop-blur-md border border-slate-200 p-8 rounded-2xl hover:shadow-xl hover:shadow-emerald-100/50 transition-all hover:-translate-y-1">
+                <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">📊</div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Rentabilité</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                    Calculs précis de ROI, cash-flow et rendements locatifs basés sur les données du marché.
+                </p>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="group bg-white/60 backdrop-blur-md border border-slate-200 p-8 rounded-2xl hover:shadow-xl hover:shadow-orange-100/50 transition-all hover:-translate-y-1">
+                <div class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">🎯</div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Scoring</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                    Score 0-100 objectif basé sur la localisation, l'état, le prix et le potentiel de plus-value.
+                </p>
+            </div>
+        </div>
+
+        <!-- TECHNICAL STATUS SECTION (THE "DEV" PART) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+            
+            <!-- SYSTEM STATUS -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-emerald-50/50 px-6 py-4 border-b border-emerald-100 flex items-center justify-between">
+                    <h3 class="font-bold text-emerald-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Application Initialisée
+                    </h3>
+                    <span class="text-xs font-mono bg-emerald-100 text-emerald-700 px-2 py-1 rounded">v1.0.0</span>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex items-center space-x-3 text-sm text-slate-600">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                            <span>Config TypeScript Strict</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-sm text-slate-600">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                            <span>Schéma Prisma (6 modèles)</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-sm text-slate-600">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                            <span>Moteur Rentabilité</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-sm text-slate-600">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                            <span>Client Claude AI</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-sm text-slate-600">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                            <span>Validation Zod</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-sm text-slate-600">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                            <span>Logging Pino</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEXT STEPS (TERMINAL STYLE) -->
+            <div class="bg-slate-900 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+                <div class="bg-slate-800 px-4 py-3 border-b border-slate-700 flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                    <span class="ml-2 text-xs text-slate-400 font-mono">setup-guide — bash</span>
+                </div>
+                <div class="p-6 font-mono text-sm text-slate-300 space-y-4 flex-1">
+                    <h3 class="text-white font-bold flex items-center">
+                        <span class="mr-2">🚀</span> Prochaines Étapes
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="group">
+                            <p class="text-slate-500 mb-1"># 1. Configurer les variables d'environnement</p>
+                            <div class="bg-black/30 p-2 rounded border border-slate-700 text-emerald-400 flex justify-between items-center group-hover:border-slate-500 transition-colors cursor-pointer">
+                                <span>cp .env.example .env</span>
+                                <span class="text-xs text-slate-500 bg-slate-800 px-1 rounded">INSTALLATION.md</span>
+                            </div>
+                        </div>
+
+                        <div class="group">
+                            <p class="text-slate-500 mb-1"># 2. Synchroniser la base de données</p>
+                            <div class="bg-black/30 p-2 rounded border border-slate-700 text-blue-400">
+                                <span>npm run db:push</span>
+                            </div>
+                        </div>
+
+                         <div class="group">
+                            <p class="text-slate-500 mb-1"># 3. Lancer les scrapers</p>
+                            <div class="bg-black/30 p-2 rounded border border-slate-700 text-purple-400">
+                                <span>voir PRD_Immo-Score.md</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="mt-16 text-center text-slate-400 text-sm">
+            <p>&copy; 2025 Immo-Score. All systems operational.</p>
+        </footer>
+
+    </main>
+</body>
+</html>

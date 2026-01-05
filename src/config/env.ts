@@ -1,0 +1,78 @@
+import { z } from 'zod';
+
+/**
+ * Environment variable schema with strict validation
+ */
+const envSchema = z.object({
+  // Supabase
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+
+  // Database
+  DATABASE_URL: z.string().url(),
+
+  // Clerk Authentication
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
+  CLERK_SECRET_KEY: z.string().min(1),
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().default('/sign-in'),
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().default('/sign-up'),
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: z.string().default('/dashboard'),
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: z.string().default('/dashboard'),
+
+  // Anthropic
+  ANTHROPIC_API_KEY: z.string().startsWith('sk-ant-'),
+
+  // Latitude.so (Prompt Management)
+  LATITUDE_API_KEY: z.string().min(1),
+  LATITUDE_PROJECT_ID: z.coerce.number().optional(),
+
+  // Upstash Redis
+  UPSTASH_REDIS_REST_URL: z.string().url(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+
+  // Sentry (optional)
+  NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
+
+  // Application
+  NEXT_PUBLIC_APP_URL: z.string().url(),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+
+  // Feature flags (optional)
+  NEXT_PUBLIC_ENABLE_ANALYTICS: z
+    .string()
+    .transform((val) => val === 'true')
+    .default('false'),
+  NEXT_PUBLIC_ENABLE_E2E_TESTS: z
+    .string()
+    .transform((val) => val === 'true')
+    .default('false'),
+});
+
+/**
+ * Validated environment variables
+ * @throws {ZodError} If environment variables are invalid
+ */
+export const env = envSchema.parse(process.env);
+
+/**
+ * Type-safe environment variables
+ */
+export type Env = z.infer<typeof envSchema>;
+
+/**
+ * Check if running in production
+ */
+export const isProduction = env.NODE_ENV === 'production';
+
+/**
+ * Check if running in development
+ */
+export const isDevelopment = env.NODE_ENV === 'development';
+
+/**
+ * Check if running in test mode
+ */
+export const isTest = env.NODE_ENV === 'test';

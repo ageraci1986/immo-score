@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immo-Score | Détail Bien</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#064E3B',
+                        accent: '#10B981',
+                        ai: '#6366f1',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+    <!-- NAV SIMPLE -->
+    <nav class="bg-white border-b border-slate-200 h-16 flex items-center px-8 sticky top-0 z-30">
+        <a href="#" class="text-slate-500 hover:text-slate-900 flex items-center text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Retour au Dashboard
+        </a>
+        <div class="ml-auto flex items-center space-x-4">
+            <span class="text-xs text-slate-400">Analyse générée il y a 2h</span>
+            <button class="text-slate-400 hover:text-red-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        
+        <!-- HEADER TITRE -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Maison de Maître - Quartier Boverie</h1>
+            <p class="text-slate-500 flex items-center mt-2">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Rue Auguste Hock 19, 4020 Liège
+                <a href="#" class="ml-3 text-ai text-sm underline hover:text-indigo-700">Voir l'annonce originale ↗</a>
+            </p>
+        </div>
+
+        <!-- GALLERIE STYLE AIRBNB -->
+        <div class="grid grid-cols-4 grid-rows-2 gap-2 h-[400px] rounded-2xl overflow-hidden mb-8 shadow-sm">
+            <div class="col-span-2 row-span-2 relative group">
+                <img src="https://placehold.co/800x600/e2e8f0/94a3b8?text=Fa%C3%A7ade" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Main">
+                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-900 shadow-sm">Photo Principale</div>
+            </div>
+            <div class="col-span-1 row-span-1"><img src="https://placehold.co/400x300/f1f5f9/94a3b8?text=Salon" class="w-full h-full object-cover hover:opacity-90 transition-opacity" alt="Salon"></div>
+            <div class="col-span-1 row-span-1"><img src="https://placehold.co/400x300/f1f5f9/94a3b8?text=Cuisine" class="w-full h-full object-cover hover:opacity-90 transition-opacity" alt="Cuisine"></div>
+            <div class="col-span-1 row-span-1"><img src="https://placehold.co/400x300/f1f5f9/94a3b8?text=Chambre" class="w-full h-full object-cover hover:opacity-90 transition-opacity" alt="Chambre"></div>
+            <div class="col-span-1 row-span-1 relative cursor-pointer">
+                <img src="https://placehold.co/400x300/f1f5f9/94a3b8?text=SDB" class="w-full h-full object-cover hover:opacity-90 transition-opacity" alt="SDB">
+                <div class="absolute inset-0 bg-black/30 flex items-center justify-center text-white font-medium hover:bg-black/40 transition-colors">
+                    +15 photos
+                </div>
+            </div>
+        </div>
+
+        <!-- LAYOUT ASYMÉTRIQUE (2/3 CONTENT, 1/3 STICKY) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            
+            <!-- GAUCHE : CONTENU -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- BLOC INTELLIGENCE ARTIFICIELLE -->
+                <section class="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <svg class="w-32 h-32 text-ai" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a1 1 0 011 1v16.17l2.42-2.42a1 1 0 011.41 1.41l-4.24 4.25a1 1 0 01-1.42 0L7.17 18.17a1 1 0 011.42-1.41L11 19.17V3a1 1 0 011-1z"></path></svg>
+                    </div>
+                    
+                    <div class="flex items-center mb-4">
+                        <div class="bg-ai text-white p-2 rounded-lg shadow-md shadow-indigo-200 mr-3">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-900">Analyse Claude AI</h2>
+                    </div>
+
+                    <p class="text-slate-700 leading-relaxed mb-6">
+                        Le bien présente un <strong class="text-emerald-700">excellent potentiel locatif</strong> en raison de sa proximité avec le Parc de la Boverie. L'IA a détecté une configuration idéale pour une colocation (4 chambres existantes). Cependant, l'isolation (PEB F) nécessitera des travaux pour optimiser la rentabilité à long terme.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white/60 p-4 rounded-xl border border-emerald-100">
+                            <h4 class="font-bold text-emerald-800 flex items-center mb-2"><svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Points Forts</h4>
+                            <ul class="text-sm text-slate-600 space-y-1 list-disc list-inside">
+                                <li>Localisation Premium</li>
+                                <li>Surface habitable (233m²)</li>
+                                <li>Division possible (4 unités)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white/60 p-4 rounded-xl border border-orange-100">
+                            <h4 class="font-bold text-orange-800 flex items-center mb-2"><svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>Points de Vigilance</h4>
+                            <ul class="text-sm text-slate-600 space-y-1 list-disc list-inside">
+                                <li>PEB F (Rénovation requise)</li>
+                                <li>Électricité non conforme</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CARACTÉRISTIQUES -->
+                <section>
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">Caractéristiques</h3>
+                    <div class="grid grid-cols-3 md:grid-cols-4 gap-4">
+                        <div class="bg-white border border-slate-100 p-4 rounded-xl text-center">
+                            <div class="text-slate-400 mb-1 mx-auto w-6 h-6"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg></div>
+                            <span class="block text-xl font-bold text-slate-800">233<small class="text-xs font-normal">m²</small></span>
+                            <span class="text-xs text-slate-500">Surface</span>
+                        </div>
+                        <div class="bg-white border border-slate-100 p-4 rounded-xl text-center">
+                            <div class="text-slate-400 mb-1 mx-auto w-6 h-6"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg></div> <!-- Placeholder Icon -->
+                            <span class="block text-xl font-bold text-slate-800">4</span>
+                            <span class="text-xs text-slate-500">Chambres</span>
+                        </div>
+                        <div class="bg-white border border-slate-100 p-4 rounded-xl text-center">
+                            <div class="text-slate-400 mb-1 mx-auto w-6 h-6"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div>
+                            <span class="block text-xl font-bold text-slate-800">F</span>
+                            <span class="text-xs text-slate-500">PEB</span>
+                        </div>
+                        <div class="bg-white border border-slate-100 p-4 rounded-xl text-center">
+                            <div class="text-slate-400 mb-1 mx-auto w-6 h-6"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
+                            <span class="block text-xl font-bold text-slate-800">1899</span>
+                            <span class="text-xs text-slate-500">Année</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- DESCRIPTION -->
+                <section>
+                    <h3 class="text-lg font-bold text-slate-900 mb-2">Description</h3>
+                    <div class="prose prose-slate text-slate-600 max-w-none text-sm">
+                        <p>Nigel Immo a le plaisir de vous présenter cette charmante maison unifamiliale avec cour de 20 m² située à 2 pas de la Boverie! À l'orée du Parc de la Boverie, à proximité immédiate de toutes les commodités, découvrez cette maison de 233 m² habitables avec cour, actuellement affectée à l'usage de 4 appartements...</p>
+                    </div>
+                    <button class="text-ai text-sm font-medium mt-2 hover:underline">Lire la suite</button>
+                </section>
+            </div>
+
+            <!-- DROITE : STICKY PANEL (LA VALEUR AJOUTÉE) -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 sticky top-24">
+                    
+                    <div class="mb-6 pb-6 border-b border-slate-100">
+                        <p class="text-slate-500 text-sm mb-1">Prix demandé</p>
+                        <h2 class="text-4xl font-bold text-slate-900">319.000 €</h2>
+                        <p class="text-slate-400 text-xs mt-1">~1.369 €/m²</p>
+                    </div>
+
+                    <!-- SCORE CIRCULAIRE -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <span class="block text-sm font-bold text-slate-700">Immo-Score</span>
+                            <span class="text-xs text-slate-500">Basé sur 12 critères</span>
+                        </div>
+                        <div class="relative w-16 h-16 flex items-center justify-center rounded-full bg-emerald-50 border-4 border-emerald-500">
+                            <span class="text-xl font-bold text-emerald-700">88</span>
+                        </div>
+                    </div>
+
+                    <!-- KPIs FINANCIERS -->
+                    <div class="space-y-4 mb-8">
+                        <div class="bg-slate-50 p-3 rounded-lg flex justify-between items-center">
+                            <span class="text-sm text-slate-600">Rentabilité Brute</span>
+                            <span class="text-sm font-bold text-emerald-600">7.2 %</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg flex justify-between items-center">
+                            <span class="text-sm text-slate-600">Cashflow estimé</span>
+                            <span class="text-sm font-bold text-emerald-600">+ 240 €<small class="text-slate-400 font-normal">/mois</small></span>
+                        </div>
+                         <div class="bg-slate-50 p-3 rounded-lg flex justify-between items-center">
+                            <span class="text-sm text-slate-600">Loyer potentiel</span>
+                            <span class="text-sm font-bold text-slate-800">1.950 €</span>
+                        </div>
+                    </div>
+
+                    <!-- ACTIONS -->
+                    <div class="space-y-3">
+                        <button class="w-full bg-primary hover:bg-emerald-900 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-200 transition-all transform hover:scale-[1.02]">
+                            Télécharger Rapport PDF
+                        </button>
+                        <button class="w-full bg-white border border-slate-200 text-slate-700 font-medium py-3 rounded-xl hover:bg-slate-50 transition-colors">
+                            Éditer les paramètres
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,239 @@
+// Immo-Score Database Schema
+// Compatible with Supabase PostgreSQL
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model synced with Clerk authentication
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  properties        Property[]
+  calculationParams CalculationParams?
+
+  @@index([email])
+  @@map("users")
+}
+
+// Property represents a real estate listing
+model Property {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceUrl   String
+  scrapedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Basic property data
+  title            String?
+  description      String?          @db.Text
+  price            Float?
+  location         String?
+  address          String?
+  coordinates      Json?            // { lat: number, lng: number }
+
+  // Property characteristics
+  surface          Float?           // Surface habitable
+  landSurface      Float?           // Surface du terrain
+  livingRoomSurface Float?
+  bedrooms         Int?
+  bathrooms        Int?
+  toilets          Int?
+  floors           Int?
+
+  // Energy & construction
+  peb              String?          // Energy Performance: A+, A, B, C, D, E, F, G
+  constructionYear Int?
+  buildingCondition String?
+
+  // Property details
+  propertyType     String?
+  propertySubtype  String?
+  furnished        Boolean?
+
+  // Features
+  hasGarden        Boolean?
+  gardenSurface    Float?
+  hasTerrace       Boolean?
+  terraceSurface   Float?
+  hasParking       Boolean?
+  parkingSpaces    Int?
+  hasSwimmingPool  Boolean?
+  hasLift          Boolean?
+  facadeCount      Int?             // Nombre de façades
+  facadeWidth      Float?           // Largeur de la façade à rue (en mètres)
+
+  // Legal & availability
+  availabilityDate String?
+  cadastralIncome  Float?
+  planningPermission String?
+  floodZone        Boolean?
+
+  // Heating & utilities
+  heatingType      String?
+  doubleGlazing    Boolean?
+
+  // External links
+  virtualTour      String?
+
+  // Photos and visual data
+  photos           Json[]           // Array of { url, analysis, storageKey, publicUrl }
+
+  // AI Analysis results
+  roofEstimate     Json?            // { surface, condition, material, estimatedAge, workNeeded, confidence }
+  facadeEstimate   Json?            // { count, totalSurface, condition, materials, workNeeded, confidence }
+  interiorAnalysis Json?            // { overall, flooring, walls, ceilings, kitchen, bathrooms, workEstimate }
+  workEstimate     Json?            // { total, breakdown: { roof, facade, interior, ... } }
+  aiScore          Float?           // Score 0-100
+  aiAnalysis       Json?            // { narrative, pros, cons, keyInsights, recommendation }
+  aiEstimations    Json?            // AI cost estimations { workCost, insurance, rent, confidence }
+
+  // Profitability calculations
+  rentabilityData  Json?            // Full RentabilityResults object (extended Belgian model)
+  rentabilityRate  Float?           // Net yield percentage for easy querying
+
+  // Location enrichment
+  nearbyServices   Json?            // Array of { type, name, distance, walkTime, coordinates }
+
+  // Status tracking
+  status           PropertyStatus   @default(PENDING)
+
+  // User customizations
+  customParams     Json?            // User-specific calculation parameters
+  isFavorite       Boolean          @default(false)
+  userNotes        String?          @db.Text
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+  @@index([userId, aiScore])
+  @@index([userId, rentabilityRate])
+  @@index([sourceUrl])
+  @@map("properties")
+}
+
+enum PropertyStatus {
+  PENDING   // URL added, not scraped yet
+  SCRAPING  // Scraping in progress
+  ANALYZING // Scraping done, AI analysis in progress
+  COMPLETED // All processing completed
+  ERROR     // Error occurred during processing
+
+  @@map("property_status")
+}
+
+// User's calculation parameters for profitability analysis
+model CalculationParams {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Acquisition costs (percentages)
+  notaryFeesPercent    Float @default(12.5)
+  agencyFeesPercent    Float @default(3.0)
+  contingencyPercent   Float @default(10.0)
+
+  // Rental income
+  defaultRentPerSqm    Float? // Default rent per m² for estimation
+  vacancyRate          Float  @default(5.0)
+
+  // Annual costs
+  propertyTaxYearly    Float  @default(800.0)
+  insuranceYearly      Float  @default(400.0)
+
+  // Operating costs (percentages of rent)
+  maintenancePercent   Float  @default(10.0)
+  managementFeesPercent Float @default(7.0)
+
+  // Work costs
+  renovationCostPerSqm Float? // Default renovation cost per m²
+
+  // Financing (optional defaults)
+  defaultInterestRate  Float?
+  defaultLoanDuration  Int?   // Years
+
+  // Tax settings
+  taxRegime            String @default("normal") // 'normal' or 'reel'
+  marginalTaxRate      Float  @default(25.0)
+
+  // Scoring weights
+  scoreWeights         Json?  // { location, condition, rentability, potential, workComplexity }
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("calculation_params")
+}
+
+// Scraping job tracking for queue management
+model ScrapingJob {
+  id          String    @id @default(cuid())
+  propertyId  String
+  url         String
+  status      JobStatus @default(PENDING)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  error       String?   @db.Text
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([propertyId])
+  @@map("scraping_jobs")
+}
+
+enum JobStatus {
+  PENDING   // Job created, waiting to run
+  RUNNING   // Job currently executing
+  COMPLETED // Job finished successfully
+  FAILED    // Job failed after retries
+  CANCELLED // Job cancelled by user
+
+  @@map("job_status")
+}
+
+// API usage tracking for monitoring costs
+model ApiUsage {
+  id           String   @id @default(cuid())
+  userId       String
+  service      String   // 'claude', 'supabase_storage', 'openstreetmap'
+  operation    String   // 'vision_analysis', 'text_generation', 'image_upload'
+  tokensUsed   Int?     // For LLM calls
+  costEstimate Float?   // Estimated cost in dollars
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([service, createdAt])
+  @@map("api_usage")
+}
+
+// Application logs for debugging and monitoring
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // 'property_added', 'analysis_completed', 'settings_updated'
+  entityType String? // 'property', 'user', 'calculation_params'
+  entityId  String?
+  metadata  Json?    // Additional context
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}

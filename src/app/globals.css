@@ -1,0 +1,349 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Immo-Score Design System - Based on HTML Mockups */
+    --background: 210 40% 98%; /* slate-50 #f8fafc */
+    --foreground: 215 25% 27%; /* slate-800 #1e293b */
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+
+    /* Primary: Emerald Deep #064E3B */
+    --primary: 163 89% 17%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Slate for neutral elements */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 215 25% 27%;
+
+    /* Muted: Subtle backgrounds */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent: Mint Electric #10B981 */
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+
+    /* AI Color: Indigo #6366f1 */
+    --ai: 239 84% 67%;
+    --ai-foreground: 0 0% 100%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & Inputs */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 163 89% 17%;
+
+    /* Radius from mockups - rounded-2xl = 1rem */
+    --radius: 1rem;
+
+    /* Success/Warning/Error */
+    --success: 160 84% 39%;
+    --warning: 38 92% 50%;
+    --error: 0 84% 60%;
+
+    /* Chart colors */
+    --chart-1: 160 84% 39%;
+    --chart-2: 239 84% 67%;
+    --chart-3: 163 89% 17%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
+  }
+
+  .dark {
+    --background: 222 84% 5%;
+    --foreground: 210 40% 98%;
+    --card: 222 84% 5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 84% 5%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+    --ai: 239 84% 67%;
+    --ai-foreground: 0 0% 100%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 160 84% 39%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus visible styles for accessibility */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+
+  /* Remove default focus for mouse users */
+  *:focus:not(:focus-visible) {
+    @apply outline-none;
+  }
+}
+
+@layer components {
+  /* Glass effect from mockups */
+  .glass-effect {
+    @apply bg-white/70 backdrop-blur-[10px];
+  }
+
+  /* Card hover effects from mockups */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  /* Gradient button from mockups */
+  .btn-gradient {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500;
+    @apply text-white shadow-md shadow-emerald-200 transition-all transform hover:scale-105;
+  }
+
+  /* AI indicator pulse animation */
+  .ai-pulse {
+    @apply relative;
+  }
+
+  .ai-pulse::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-[hsl(var(--ai))] animate-ping opacity-75;
+  }
+
+  .ai-pulse::after {
+    content: '';
+    @apply relative inline-flex rounded-full bg-[hsl(var(--ai))];
+  }
+
+  /* Score badge styles */
+  .score-badge {
+    @apply bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm flex items-center;
+  }
+
+  .score-badge-excellent {
+    @apply border border-emerald-100;
+  }
+
+  .score-badge-good {
+    @apply border border-yellow-100;
+  }
+
+  .score-badge-poor {
+    @apply border border-red-100;
+  }
+
+  /* Location badge from mockups */
+  .location-badge {
+    @apply bg-black/50 backdrop-blur-md px-2 py-1 rounded-md text-xs font-medium text-white;
+  }
+
+  /* ROI badge styles */
+  .roi-badge-positive {
+    @apply text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-sm font-semibold;
+  }
+
+  .roi-badge-neutral {
+    @apply text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded text-sm font-semibold;
+  }
+
+  .roi-badge-negative {
+    @apply text-red-600 bg-red-50 px-2 py-0.5 rounded text-sm font-semibold;
+  }
+
+  /* KPI Card styles from mockups */
+  .kpi-card {
+    @apply bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  /* Property card image area */
+  .property-image {
+    @apply relative h-48 bg-slate-200 overflow-hidden;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply animate-pulse rounded-md bg-muted;
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary)) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-primary/30 hover:bg-primary/50;
+  }
+}
+
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* AI text color */
+  .text-ai {
+    color: hsl(var(--ai));
+  }
+
+  /* AI background color */
+  .bg-ai {
+    background-color: hsl(var(--ai));
+  }
+
+  /* Accent text color */
+  .text-accent {
+    color: hsl(var(--accent));
+  }
+
+  /* Hide scrollbar */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  /* Safe area insets for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Print utilities */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+
+    .page-break {
+      page-break-after: always;
+    }
+  }
+}
+
+/* Custom animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-top {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Animation classes */
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.4s ease-out;
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.4s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}

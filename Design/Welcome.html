@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immo-Score | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#064E3B', // Vert émeraude profond
+                        accent: '#10B981',  // Menthe électrique
+                        ai: '#6366f1',      // Indigo IA
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- SIDEBAR -->
+        <aside class="w-64 bg-white border-r border-slate-200 flex flex-col justify-between hidden md:flex z-20">
+            <div>
+                <div class="h-20 flex items-center px-8 border-b border-slate-100">
+                    <h1 class="text-2xl font-bold text-primary tracking-tight">Immo<span class="text-accent">Score</span></h1>
+                </div>
+                <nav class="p-4 space-y-1">
+                    <a href="#" class="flex items-center px-4 py-3 text-sm font-medium bg-primary/5 text-primary rounded-xl">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        Dashboard
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        Mes Biens
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        Rapports
+                    </a>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-slate-100">
+                <button class="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 mr-3 flex items-center justify-center font-bold text-xs">JD</div>
+                    Jean Dupont
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 overflow-y-auto relative">
+            <!-- Header Mobile/Desktop -->
+            <header class="h-20 glass-effect sticky top-0 z-10 border-b border-slate-200 px-8 flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-slate-800">Vue d'ensemble</h2>
+                <button class="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-md shadow-emerald-200 flex items-center transition-all transform hover:scale-105">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Ajouter un bien
+                </button>
+            </header>
+
+            <div class="p-8 max-w-7xl mx-auto space-y-8">
+                
+                <!-- KPI BENTO GRID -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <!-- KPI 1 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-slate-500">Biens Analysés</p>
+                                <h3 class="text-3xl font-bold text-slate-800 mt-2">12</h3>
+                            </div>
+                            <span class="p-2 bg-slate-50 rounded-lg text-slate-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 2 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-slate-500">Analyses en cours</p>
+                                <div class="flex items-center mt-2">
+                                    <h3 class="text-3xl font-bold text-slate-800">4</h3>
+                                    <span class="ml-2 flex h-3 w-3 relative">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-ai opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-3 w-3 bg-ai"></span>
+                                    </span>
+                                </div>
+                            </div>
+                            <span class="p-2 bg-indigo-50 rounded-lg text-ai">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 3 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                        <div class="flex justify-between items-start z-10 relative">
+                            <div>
+                                <p class="text-sm font-medium text-slate-500">Score Moyen</p>
+                                <h3 class="text-3xl font-bold text-emerald-600 mt-2">76<span class="text-lg text-emerald-400">/100</span></h3>
+                            </div>
+                            <div class="h-10 w-10 rounded-full border-4 border-emerald-100 border-t-emerald-500 flex items-center justify-center">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPI 4 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Rentabilité Moy.</p>
+                            <h3 class="text-3xl font-bold text-slate-800 mt-2">8.2%</h3>
+                        </div>
+                        <div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-emerald-500 w-3/4 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION TITRE + FILTRES -->
+                <div class="flex items-center justify-between mt-8">
+                    <h3 class="text-lg font-bold text-slate-800">Analyses Récentes</h3>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1 text-xs font-medium bg-white border border-slate-200 rounded-md text-slate-600 hover:border-slate-400">Date</button>
+                        <button class="px-3 py-1 text-xs font-medium bg-white border border-slate-200 rounded-md text-slate-600 hover:border-slate-400">Score</button>
+                    </div>
+                </div>
+
+                <!-- LISTE DES BIENS (GRID) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
+                    
+                    <!-- CARD 1 -->
+                    <div class="group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                        <div class="relative h-48 bg-slate-200">
+                            <img src="https://placehold.co/600x400/e2e8f0/94a3b8?text=Maison+Li%C3%A8ge" alt="Maison" class="w-full h-full object-cover">
+                            <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-emerald-100 shadow-sm flex items-center">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500 mr-2"></span>
+                                <span class="text-sm font-bold text-emerald-800">88/100</span>
+                            </div>
+                            <div class="absolute bottom-4 left-4 bg-black/50 backdrop-blur-md px-2 py-1 rounded-md">
+                                <span class="text-xs font-medium text-white">Liège · 4000</span>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="flex justify-between items-end mb-2">
+                                <h4 class="text-xl font-bold text-slate-900">319.000 €</h4>
+                                <span class="text-sm font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">ROI 7.2%</span>
+                            </div>
+                            <p class="text-slate-500 text-sm mb-4 line-clamp-1">Rue Auguste Hock 19, Maison de maître</p>
+                            
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                                <div class="flex space-x-3 text-slate-400 text-xs">
+                                    <span class="flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg> 233m²</span>
+                                    <span class="flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg> IA Ready</span>
+                                </div>
+                                <button class="text-ai font-medium text-sm hover:underline">Voir détail →</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 2 -->
+                    <div class="group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                        <div class="relative h-48 bg-slate-200">
+                             <img src="https://placehold.co/600x400/e2e8f0/94a3b8?text=Immeuble" alt="Maison" class="w-full h-full object-cover">
+                            <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-yellow-100 shadow-sm flex items-center">
+                                <span class="h-2 w-2 rounded-full bg-yellow-500 mr-2"></span>
+                                <span class="text-sm font-bold text-yellow-800">64/100</span>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="flex justify-between items-end mb-2">
+                                <h4 class="text-xl font-bold text-slate-900">450.000 €</h4>
+                                <span class="text-sm font-semibold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">ROI 4.5%</span>
+                            </div>
+                            <p class="text-slate-500 text-sm mb-4 line-clamp-1">Quai de la Boverie, Immeuble de rapport</p>
+                            
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                                <div class="flex space-x-3 text-slate-400 text-xs">
+                                    <span class="flex items-center">310m²</span>
+                                    <span class="flex items-center">3 unités</span>
+                                </div>
+                                <button class="text-ai font-medium text-sm hover:underline">Voir détail →</button>
+                            </div>
+                        </div>
+                    </div>
+
+                     <!-- CARD 3 (Loading State) -->
+                     <div class="bg-slate-50 rounded-2xl border border-slate-200 border-dashed flex flex-col items-center justify-center p-8 text-center cursor-pointer hover:bg-slate-100 transition-colors">
+                        <div class="h-12 w-12 rounded-full bg-slate-200 flex items-center justify-center mb-3">
+                            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        </div>
+                        <h4 class="text-slate-900 font-medium">Nouvelle Analyse</h4>
+                        <p class="text-slate-500 text-sm mt-1">Collez une URL Immoweb</p>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
