@@ -1,32 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { addPropertiesSchema } from '@/lib/validation/schemas';
-// import { logInfo, logError } from '@/lib/logger';
-// import { captureException } from '@/lib/monitoring';
+import { getAuthUser } from '@/lib/supabase/auth';
 import type { PropertyStatus } from '@/types';
 
 /**
  * GET /api/properties
- * Récupère toutes les propriétés de l'utilisateur
+ * Récupère toutes les propriétés de l'utilisateur authentifié
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    // Pour l'instant, pas d'authentification (à implémenter avec Clerk)
-    // const { userId } = auth();
-    // if (!userId) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+    const user = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') as PropertyStatus | null;
 
     const properties = await prisma.property.findMany({
-      where: status ? { status } : {},
+      where: {
+        userId: user.id,
+        ...(status ? { status } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
-
-    console.log('Properties fetched:', properties.length);
 
     return NextResponse.json({ properties });
   } catch (error) {
@@ -45,11 +44,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    // Pour l'instant, pas d'authentification
-    // const { userId } = auth();
-    // if (!userId) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+    const user = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const body = await request.json();
     const validation = addPropertiesSchema.safeParse(body);
@@ -66,21 +64,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { urls, customParams } = validation.data;
 
-    // Créer les propriétés avec un userId fictif pour le développement
-    const userId = 'dev-user-1';
-
     const properties = await Promise.all(
       urls.map(async (url) => {
         const property = await prisma.property.create({
           data: {
-            userId,
+            userId: user.id,
             sourceUrl: url,
             status: 'PENDING',
-            customParams: customParams as Record<string, unknown> | undefined,
+            customParams: customParams ? JSON.parse(JSON.stringify(customParams)) : undefined,
           },
         });
 
-        // Créer un job de scraping
         await prisma.scrapingJob.create({
           data: {
             propertyId: property.id,
@@ -89,17 +83,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           },
         });
 
-        console.log('Property created:', property.id, url);
-
         return property;
       })
     );
 
     // Trigger scraping in the background (don't wait)
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/scraping/process`, {
+    fetch(`${process.env['NEXT_PUBLIC_APP_URL']}/api/scraping/process`, {
       method: 'POST',
-    }).catch((error) => {
-      console.error('Failed to trigger scraping:', error);
+    }).catch((err) => {
+      console.error('Failed to trigger scraping:', err);
     });
 
     return NextResponse.json(

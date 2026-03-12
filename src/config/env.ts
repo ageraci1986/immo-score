@@ -6,26 +6,14 @@ import { z } from 'zod';
 const envSchema = z.object({
   // Supabase
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
   // Database
   DATABASE_URL: z.string().url(),
 
-  // Clerk Authentication
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
-  CLERK_SECRET_KEY: z.string().min(1),
-  NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().default('/sign-in'),
-  NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().default('/sign-up'),
-  NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: z.string().default('/dashboard'),
-  NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: z.string().default('/dashboard'),
-
   // Anthropic
   ANTHROPIC_API_KEY: z.string().startsWith('sk-ant-'),
-
-  // Latitude.so (Prompt Management)
-  LATITUDE_API_KEY: z.string().min(1),
-  LATITUDE_PROJECT_ID: z.coerce.number().optional(),
 
   // Upstash Redis
   UPSTASH_REDIS_REST_URL: z.string().url(),

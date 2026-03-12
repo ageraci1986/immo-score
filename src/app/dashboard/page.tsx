@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Building2, Zap, Plus, Home, BarChart3, LayoutGrid } from 'lucide-react';
+import { Building2, Zap, Plus, Home } from 'lucide-react';
 import { useProperties } from '@/hooks/use-properties';
 import { AddPropertyModal } from '@/components/features/add-property-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Sidebar } from '@/components/layout/sidebar';
 import type { Property } from '@/types';
 
 export default function DashboardPage(): JSX.Element {
@@ -63,46 +64,7 @@ export default function DashboardPage(): JSX.Element {
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* SIDEBAR */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex-col justify-between hidden md:flex z-20">
-        <div>
-          <div className="h-20 flex items-center px-8 border-b border-slate-100">
-            <h1 className="text-2xl font-bold text-primary tracking-tight">
-              Immo<span className="text-accent">Score</span>
-            </h1>
-          </div>
-          <nav className="p-4 space-y-1">
-            <Link
-              href="/dashboard"
-              className="flex items-center px-4 py-3 text-sm font-medium bg-primary/5 text-primary rounded-xl"
-            >
-              <LayoutGrid className="w-5 h-5 mr-3" />
-              Dashboard
-            </Link>
-            <Link
-              href="/properties"
-              className="flex items-center px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors"
-            >
-              <Home className="w-5 h-5 mr-3" />
-              Mes Biens
-            </Link>
-            <Link
-              href="/reports"
-              className="flex items-center px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors"
-            >
-              <BarChart3 className="w-5 h-5 mr-3" />
-              Rapports
-            </Link>
-          </nav>
-        </div>
-        <div className="p-4 border-t border-slate-100">
-          <button className="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">
-            <div className="w-8 h-8 rounded-full bg-slate-200 mr-3 flex items-center justify-center font-bold text-xs">
-              JD
-            </div>
-            Jean Dupont
-          </button>
-        </div>
-      </aside>
+      <Sidebar />
 
       {/* MAIN CONTENT */}
       <main className="flex-1 overflow-y-auto relative">

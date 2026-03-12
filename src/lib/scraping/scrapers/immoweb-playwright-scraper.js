@@ -378,6 +378,7 @@ class ImmowebPlaywrightScraper {
         }
 
         function getTableValue(label) {
+          // Support both French and English labels
           const labels = [label, label.toLowerCase(), label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()];
           for (const l of labels) {
             const cells = Array.from(document.querySelectorAll('th, td'));
@@ -390,47 +391,129 @@ class ImmowebPlaywrightScraper {
           return undefined;
         }
 
+        // Helper to get a value trying multiple label variants (FR/EN)
+        function getTableValueMulti(...labels) {
+          for (const label of labels) {
+            const val = getTableValue(label);
+            if (val) return val;
+          }
+          return undefined;
+        }
+
         const result = {};
 
-        // Title
-        const titleEl = document.querySelector('h1');
-        result.title = titleEl ? titleEl.textContent.trim() : undefined;
+        // ── PRIMARY: Extract from window.classified (Immoweb's internal data) ──
+        // This is the most reliable source - works regardless of language
+        let classified = null;
+        try {
+          if (window.classified) {
+            classified = window.classified;
+          }
+        } catch (e) {
+          // Not available
+        }
 
-        // Price - handle both standard prices and "Faire offre" patterns
-        const priceElements = Array.from(document.querySelectorAll('p, span, div, [class*="price"]'));
-        const priceEl = priceElements.find((el) => {
-          const text = el.textContent || '';
-          return text.includes('€') && (text.includes('000') || text.match(/\d{3,}/));
-        });
+        if (classified) {
+          // Price
+          result.price = classified.price?.mainValue || classified.transaction?.sale?.price || undefined;
 
-        if (priceEl && priceEl.textContent) {
-          const text = priceEl.textContent;
+          // Title - combine type + transaction
+          const type = classified.property?.type || '';
+          const subtype = classified.property?.subtype || '';
+          const transType = classified.transaction?.type || '';
+          result.title = `${subtype || type} - ${transType}`.trim();
 
-          // Check for "Faire offre à partir de X €" pattern first
-          const offerMatch = text.match(/(?:Faire offre à partir de|à partir de|from)\s*([\d\s.]+)\s*€/i);
-          if (offerMatch) {
-            const cleaned = offerMatch[1].replace(/[\s.]/g, '');
-            result.price = parseInt(cleaned, 10);
-          } else {
-            // Standard price extraction - look for price with proper spacing
-            // Try to find sequences like "319 000" or "319000"
-            const spaceMatch = text.match(/([\d\s.]+)\s*€/);
-            if (spaceMatch) {
-              const cleaned = spaceMatch[1].replace(/[\s.]/g, '');
-              result.price = parseInt(cleaned, 10);
+          // Location
+          const loc = classified.property?.location || {};
+          result.address = [loc.street, loc.number, loc.postalCode, loc.locality]
+            .filter(Boolean).join(', ') || undefined;
+          result.location = [loc.postalCode, loc.locality].filter(Boolean).join(' ') || result.address;
+
+          // Surface
+          result.surface = classified.property?.netHabitableSurface || classified.property?.livingRoom?.surface || undefined;
+          result.landSurface = classified.property?.land?.surface || undefined;
+          result.livingRoomSurface = classified.property?.livingRoom?.surface || undefined;
+
+          // Rooms
+          result.bedrooms = classified.property?.bedroomCount || undefined;
+          result.bathrooms = classified.property?.bathroomCount || undefined;
+          result.toilets = classified.property?.toiletCount || undefined;
+          result.floors = classified.property?.floorCount || undefined;
+
+          // Energy
+          result.energyClass = classified.transaction?.certificates?.epcScore || undefined;
+
+          // Construction
+          result.yearBuilt = classified.property?.building?.constructionYear || undefined;
+          result.buildingCondition = classified.property?.building?.condition || undefined;
+
+          // Property type
+          result.propertyType = classified.property?.type?.toUpperCase() || undefined;
+          result.propertySubtype = classified.property?.subtype || undefined;
+
+          // Features
+          result.hasGarden = classified.property?.hasGarden || false;
+          result.gardenSurface = classified.property?.gardenSurface || undefined;
+          result.hasTerrace = classified.property?.hasTerrace || false;
+          result.terraceSurface = classified.property?.terraceSurface || undefined;
+          result.hasParking = (classified.property?.parkingCountIndoor || 0) + (classified.property?.parkingCountOutdoor || 0) > 0;
+          result.parkingSpaces = (classified.property?.parkingCountIndoor || 0) + (classified.property?.parkingCountOutdoor || 0) || undefined;
+          result.hasSwimmingPool = classified.property?.hasSwimmingPool || false;
+          result.hasLift = classified.property?.hasLift || false;
+          result.facadeCount = classified.property?.building?.facadeCount || undefined;
+
+          // Cadastral income
+          result.cadastralIncome = classified.transaction?.sale?.cadastralIncome || undefined;
+
+          // Description
+          result.description = classified.property?.description || undefined;
+
+          // Coordinates
+          const lat = loc.latitude;
+          const lng = loc.longitude;
+          if (lat && lng) {
+            result.coordinates = { lat, lng };
+          }
+        }
+
+        // ── FALLBACK: DOM extraction if window.classified didn't provide data ──
+
+        // Title fallback
+        if (!result.title) {
+          const titleEl = document.querySelector('h1');
+          result.title = titleEl ? titleEl.textContent.trim().replace(/\s+/g, ' ') : undefined;
+        }
+
+        // Price fallback - DOM extraction
+        if (!result.price) {
+          const priceElements = Array.from(document.querySelectorAll('p, span, div, [class*="price"]'));
+          const priceEl = priceElements.find((el) => {
+            const text = el.textContent || '';
+            return text.includes('€') && (text.includes('000') || text.match(/\d{3,}/));
+          });
+
+          if (priceEl && priceEl.textContent) {
+            const text = priceEl.textContent;
+            const offerMatch = text.match(/(?:Faire offre à partir de|à partir de|from)\s*([\d\s.]+)\s*€/i);
+            if (offerMatch) {
+              result.price = parseInt(offerMatch[1].replace(/[\s.]/g, ''), 10);
             } else {
-              // Fallback to original method
-              const cleaned = text.replace(/[€\s.]/g, '');
-              const match = cleaned.match(/(\d{5,})/);
-              result.price = match ? parseInt(match[1], 10) : undefined;
+              const spaceMatch = text.match(/([\d\s.]+)\s*€/);
+              if (spaceMatch) {
+                result.price = parseInt(spaceMatch[1].replace(/[\s.]/g, ''), 10);
+              }
             }
           }
         }
 
-        // Address & Location
-        const addressEl = document.querySelector('[class*="classified__header--address"], [class*="address"]');
-        result.address = addressEl ? addressEl.textContent.trim() : undefined;
-        result.location = result.address;
+        // Address fallback
+        if (!result.address) {
+          const addressEl = document.querySelector('[class*="classified__header--address"], [class*="address"]');
+          if (addressEl) {
+            result.address = addressEl.textContent.trim().replace(/\s+/g, ' ');
+            result.location = result.address;
+          }
+        }
 
         // Description
         const descEl = document.querySelector('[class*="classified__description"], [class*="description"]');
@@ -548,40 +631,42 @@ class ImmowebPlaywrightScraper {
 
         result.photos = uniquePhotos;
 
-        // Property details
-        result.surface = extractNumber(getTableValue('Surface habitable'));
-        result.landSurface = extractNumber(getTableValue('Surface du terrain'));
-        result.bedrooms = extractNumber(getTableValue('Chambres'));
-        result.bathrooms = extractNumber(getTableValue('Salles de bains'));
-
-        // Energy class - try multiple approaches
-        result.energyClass =
-          getTableValue('Classe énergétique') ||
-          getTableValue('PEB') ||
-          // Try to find in structured data sections
-          (() => {
-            const energySection = document.querySelector('[class*="energy"], [class*="peb"]');
-            if (energySection) {
-              const text = energySection.textContent;
-              const match = text.match(/Classe énergétique\s*([A-G][\+\-]?)/i);
-              if (match) return match[1];
-            }
-            return undefined;
-          })();
-
-        // Construction year - from "Année de construction" field
-        result.yearBuilt = extractNumber(getTableValue('Année de construction'));
-
-        // Land/Terrain - from "Terrain" or "Surface du terrain" field
-        if (!result.landSurface) {
-          result.landSurface = extractNumber(getTableValue('Terrain'));
+        // ── TABLE FALLBACKS (FR + EN labels) ──
+        // Only use table extraction if window.classified didn't provide values
+        if (!result.surface) {
+          result.surface = extractNumber(getTableValueMulti('Surface habitable', 'Living area', 'Net habitable surface', 'Livable space'));
         }
-
-        // Number of facades - from "Nombre de façades" field
-        result.facadeCount = extractNumber(getTableValue('Nombre de façades'));
-
-        // Facade width - from "Largeur de la façade à rue" field
-        result.facadeWidth = extractNumber(getTableValue('Largeur de la façade à rue'));
+        if (!result.landSurface) {
+          result.landSurface = extractNumber(getTableValueMulti('Surface du terrain', 'Land surface', 'Plot surface', 'Terrain'));
+        }
+        if (!result.bedrooms) {
+          result.bedrooms = extractNumber(getTableValueMulti('Chambres', 'Bedrooms', 'Bedroom'));
+        }
+        if (!result.bathrooms) {
+          result.bathrooms = extractNumber(getTableValueMulti('Salles de bains', 'Bathrooms', 'Bathroom'));
+        }
+        if (!result.energyClass) {
+          result.energyClass =
+            getTableValueMulti('Classe énergétique', 'Energy class', 'PEB', 'EPC') ||
+            (() => {
+              const energySection = document.querySelector('[class*="energy"], [class*="peb"]');
+              if (energySection) {
+                const text = energySection.textContent;
+                const match = text.match(/(?:Classe énergétique|Energy class)\s*([A-G][\+\-]?)/i);
+                if (match) return match[1];
+              }
+              return undefined;
+            })();
+        }
+        if (!result.yearBuilt) {
+          result.yearBuilt = extractNumber(getTableValueMulti('Année de construction', 'Construction year', 'Year of construction'));
+        }
+        if (!result.facadeCount) {
+          result.facadeCount = extractNumber(getTableValueMulti('Nombre de façades', 'Number of frontages', 'Frontages'));
+        }
+        if (!result.facadeWidth) {
+          result.facadeWidth = extractNumber(getTableValueMulti('Largeur de la façade à rue', 'Width of facade'));
+        }
 
         return result;
       });

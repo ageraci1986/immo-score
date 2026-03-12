@@ -74,15 +74,19 @@ export async function processScrapingJob(jobId: string): Promise<void> {
 
       console.log(`Scraped ${photos.length} photos for property ${job.propertyId}`);
 
+      // Clean up whitespace in text fields
+      const cleanText = (text: string | undefined): string | undefined =>
+        text ? text.replace(/\s+/g, ' ').trim() : undefined;
+
       // Update property with scraped data
       await prisma.property.update({
         where: { id: job.propertyId },
         data: {
-          title: result.data.title,
-          description: result.data.description,
+          title: cleanText(result.data.title),
+          description: cleanText(result.data.description),
           price: result.data.price,
-          location: result.data.location,
-          address: result.data.address,
+          location: cleanText(result.data.location),
+          address: cleanText(result.data.address),
 
           // Surfaces
           surface: result.data.surface,

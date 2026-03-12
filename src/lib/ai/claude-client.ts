@@ -1,12 +1,7 @@
 import { AIAnalysisError } from '@/lib/errors';
 import { logDebug, logError, logInfo } from '@/lib/logger';
 import type { VisionAnalysis, PropertyScore, AICostEstimation } from '@/types';
-import {
-  runNarrativeGeneration as runLatitudeNarrativeGeneration,
-  runCostEstimation as runLatitudeCostEstimation,
-  runVisionAnalysis as runLatitudeVisionAnalysis,
-  PROMPT_PATHS,
-} from './latitude-client';
+import { runPrompt, PROMPT_SLUGS } from './prompt-service';
 
 interface PropertyContext {
   readonly surface?: number;
@@ -16,8 +11,7 @@ interface PropertyContext {
 }
 
 /**
- * Analyzes property photos using Latitude.so with GPT-4o-mini
- * Uses public image URLs passed to the prompt
+ * Analyzes property photos using AI via database-managed prompts
  *
  * @param imageUrls - Array of public image URLs to analyze
  * @param context - Additional property information for context
@@ -32,25 +26,25 @@ export async function analyzePropertyPhotos(
     throw new AIAnalysisError('No images provided for analysis');
   }
 
-  logInfo('Starting property photo analysis via Latitude', {
-    promptPath: PROMPT_PATHS.VISION_ANALYSIS,
+  logInfo('Starting property photo analysis', {
     imageCount: imageUrls.length,
     imageUrls: imageUrls.slice(0, 3),
     context,
   });
 
   try {
-    const responseText = await runLatitudeVisionAnalysis({
-      surface: context.surface,
-      description: context.description,
-      location: context.location,
-      price: context.price,
-      imageUrls: imageUrls.slice(0, 5), // Limit to 5 images
+    const responseText = await runPrompt(PROMPT_SLUGS.VISION_ANALYSIS, {
+      surface: context.surface ?? '',
+      description: context.description ?? '',
+      location: context.location ?? '',
+      price: context.price ?? '',
+      imageUrls: imageUrls.slice(0, 5).join('\n'),
+      imageCount: imageUrls.length,
     });
 
     const analysis = parseVisionAnalysis(responseText);
 
-    logDebug('Property photo analysis completed via Latitude', {
+    logDebug('Property photo analysis completed', {
       roofCondition: analysis.roofEstimate.condition,
       facadeCondition: analysis.facadeEstimate.condition,
     });
@@ -59,7 +53,7 @@ export async function analyzePropertyPhotos(
   } catch (error) {
     logError('Property photo analysis failed', error as Error, { context });
 
-    throw new AIAnalysisError('Failed to analyze property photos via Latitude', {
+    throw new AIAnalysisError('Failed to analyze property photos', {
       cause: error,
       context,
     });
@@ -67,7 +61,7 @@ export async function analyzePropertyPhotos(
 }
 
 /**
- * Generates narrative analysis and scoring for a property using Latitude.so
+ * Generates narrative analysis and scoring for a property
  *
  * @param propertyData - Complete property information
  * @param visionAnalysis - Results from vision analysis
@@ -99,19 +93,15 @@ export async function generatePropertyNarrative(
     readonly rentabilityScore: number;
   }
 ): Promise<Omit<PropertyScore, 'totalScore' | 'breakdown' | 'recommendation'>> {
-  logInfo('Generating property narrative via Latitude', {
-    promptPath: PROMPT_PATHS.NARRATIVE_GENERATION,
-    propertyData,
-    scores,
-  });
+  logInfo('Generating property narrative', { propertyData, scores });
 
   try {
-    const responseText = await runLatitudeNarrativeGeneration({
-      location: propertyData.location,
-      price: propertyData.price,
-      surface: propertyData.surface,
-      peb: propertyData.peb,
-      description: propertyData.description,
+    const responseText = await runPrompt(PROMPT_SLUGS.NARRATIVE_GENERATION, {
+      location: propertyData.location ?? '',
+      price: propertyData.price ?? 0,
+      surface: propertyData.surface ?? 0,
+      peb: propertyData.peb ?? '',
+      description: propertyData.description ?? '',
       roofCondition: visionAnalysis.roofEstimate.condition,
       roofSurface: visionAnalysis.roofEstimate.estimatedSurface,
       roofMaterial: visionAnalysis.roofEstimate.material,
@@ -120,8 +110,8 @@ export async function generatePropertyNarrative(
       facadeCount: visionAnalysis.facadeEstimate.count,
       facadeSurface: visionAnalysis.facadeEstimate.totalSurface,
       facadeMaterials: visionAnalysis.facadeEstimate.materials.join(', '),
-      interiorCondition: visionAnalysis.interiorCondition?.overall,
-      interiorWorkEstimate: visionAnalysis.interiorCondition?.workEstimate,
+      interiorCondition: visionAnalysis.interiorCondition?.overall ?? '',
+      interiorWorkEstimate: visionAnalysis.interiorCondition?.workEstimate ?? '',
       totalInvestment: rentabilityData.totalInvestment,
       workCost: rentabilityData.workCost,
       grossYield: rentabilityData.grossYield,
@@ -135,20 +125,20 @@ export async function generatePropertyNarrative(
 
     const narrative = parseNarrativeResponse(responseText);
 
-    logDebug('Property narrative generated successfully via Latitude');
+    logDebug('Property narrative generated successfully');
 
     return narrative;
   } catch (error) {
     logError('Property narrative generation failed', error as Error);
 
-    throw new AIAnalysisError('Failed to generate property narrative via Latitude', {
+    throw new AIAnalysisError('Failed to generate property narrative', {
       cause: error,
     });
   }
 }
 
 /**
- * Parses vision analysis response from Latitude
+ * Parses vision analysis response
  */
 function parseVisionAnalysis(text: string): VisionAnalysis {
   const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -156,7 +146,6 @@ function parseVisionAnalysis(text: string): VisionAnalysis {
   try {
     const parsed = JSON.parse(cleanedText);
 
-    // Validate required fields
     if (!parsed.roofEstimate || !parsed.facadeEstimate) {
       throw new Error('Missing required fields in vision analysis');
     }
@@ -171,7 +160,7 @@ function parseVisionAnalysis(text: string): VisionAnalysis {
 }
 
 /**
- * Parses narrative response from Latitude
+ * Parses narrative response
  */
 function parseNarrativeResponse(
   text: string
@@ -213,7 +202,7 @@ interface CostEstimationPropertyData {
 }
 
 /**
- * Estimates costs for a property using AI analysis via Latitude.so
+ * Estimates costs for a property using AI analysis
  *
  * @param propertyData - Basic property information
  * @param visionAnalysis - Results from vision analysis (roof, facade, interior)
@@ -224,20 +213,17 @@ export async function estimatePropertyCosts(
   propertyData: CostEstimationPropertyData,
   visionAnalysis: VisionAnalysis
 ): Promise<AICostEstimation> {
-  logInfo('Estimating property costs via Latitude', {
-    promptPath: PROMPT_PATHS.COST_ESTIMATION,
-    propertyData,
-  });
+  logInfo('Estimating property costs', { propertyData });
 
   try {
-    const responseText = await runLatitudeCostEstimation({
-      location: propertyData.location,
-      propertyType: propertyData.propertyType,
-      surface: propertyData.surface,
-      bedrooms: propertyData.bedrooms,
-      constructionYear: propertyData.constructionYear,
-      peb: propertyData.peb,
-      price: propertyData.price,
+    const responseText = await runPrompt(PROMPT_SLUGS.COST_ESTIMATION, {
+      location: propertyData.location ?? '',
+      propertyType: propertyData.propertyType ?? '',
+      surface: propertyData.surface ?? 0,
+      bedrooms: propertyData.bedrooms ?? 0,
+      constructionYear: propertyData.constructionYear ?? '',
+      peb: propertyData.peb ?? '',
+      price: propertyData.price ?? 0,
       roofCondition: visionAnalysis.roofEstimate.condition,
       roofSurface: visionAnalysis.roofEstimate.estimatedSurface,
       roofMaterial: visionAnalysis.roofEstimate.material,
@@ -247,13 +233,13 @@ export async function estimatePropertyCosts(
       facadeSurface: visionAnalysis.facadeEstimate.totalSurface,
       facadeMaterials: visionAnalysis.facadeEstimate.materials.join(', '),
       facadeWorkNeeded: visionAnalysis.facadeEstimate.workNeeded?.join(', ') ?? '',
-      interiorCondition: visionAnalysis.interiorCondition?.overall,
-      interiorWorkEstimate: visionAnalysis.interiorCondition?.workEstimate,
+      interiorCondition: visionAnalysis.interiorCondition?.overall ?? '',
+      interiorWorkEstimate: visionAnalysis.interiorCondition?.workEstimate ?? '',
     });
 
     const estimation = parseCostEstimationResponse(responseText);
 
-    logDebug('Property cost estimation completed via Latitude', {
+    logDebug('Property cost estimation completed', {
       estimatedWorkCost: estimation.estimatedWorkCost,
       estimatedInsurance: estimation.estimatedInsurance,
       estimatedMonthlyRent: estimation.estimatedMonthlyRent,
@@ -264,7 +250,7 @@ export async function estimatePropertyCosts(
   } catch (error) {
     logError('Property cost estimation failed', error as Error, { propertyData });
 
-    throw new AIAnalysisError('Failed to estimate property costs via Latitude', {
+    throw new AIAnalysisError('Failed to estimate property costs', {
       cause: error,
       propertyData,
     });
@@ -272,7 +258,7 @@ export async function estimatePropertyCosts(
 }
 
 /**
- * Parses cost estimation response from Latitude
+ * Parses cost estimation response
  */
 function parseCostEstimationResponse(text: string): AICostEstimation {
   const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -280,7 +266,6 @@ function parseCostEstimationResponse(text: string): AICostEstimation {
   try {
     const parsed = JSON.parse(cleanedText);
 
-    // Validate required fields
     if (
       typeof parsed.estimatedWorkCost !== 'number' ||
       typeof parsed.estimatedInsurance !== 'number' ||

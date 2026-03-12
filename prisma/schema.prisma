@@ -11,19 +11,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model synced with Clerk authentication
+// User model synced with Supabase Auth
 model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  supabaseId String   @unique
+  email      String   @unique
+  name       String?
+  avatarUrl  String?
+  role       String   @default("user") // 'user' | 'admin'
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
   properties        Property[]
   calculationParams CalculationParams?
 
   @@index([email])
+  @@index([supabaseId])
   @@map("users")
 }
 
@@ -219,6 +223,41 @@ model ApiUsage {
   @@index([userId, createdAt])
   @@index([service, createdAt])
   @@map("api_usage")
+}
+
+// AI Prompt templates managed from admin settings
+model AiPrompt {
+  id          String   @id @default(cuid())
+  slug        String   @unique // 'vision-analysis', 'narrative-generation', 'cost-estimation'
+  name        String   // Human-readable name
+  description String?  @db.Text
+  content     String   @db.Text // The prompt template with {{variable}} placeholders
+  model       String   @default("claude-sonnet-4-20250514") // AI model identifier
+  provider    String   @default("anthropic") // 'anthropic' | 'openai'
+  maxTokens   Int      @default(4096)
+  temperature Float    @default(0.3)
+  isActive    Boolean  @default(true)
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("ai_prompts")
+}
+
+// API keys for AI providers (stored encrypted-at-rest via Supabase)
+model AiProvider {
+  id        String   @id @default(cuid())
+  provider  String   @unique // 'anthropic' | 'openai' | 'google'
+  name      String   // Human-readable: 'Anthropic', 'OpenAI', 'Google Gemini'
+  apiKey    String   @db.Text // Encrypted API key
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([provider])
+  @@map("ai_providers")
 }
 
 // Application logs for debugging and monitoring

@@ -6,20 +6,15 @@ import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  user?: {
-    name: string;
-    email?: string;
-    image?: string;
-  };
 }
 
-export function AppLayout({ children, user }: AppLayoutProps): JSX.Element {
+export function AppLayout({ children }: AppLayoutProps): JSX.Element {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Desktop Sidebar */}
-      <Sidebar user={user} />
+      <Sidebar />
 
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
@@ -29,7 +24,7 @@ export function AppLayout({ children, user }: AppLayoutProps): JSX.Element {
             onClick={() => setMobileMenuOpen(false)}
           />
           <div className="fixed inset-y-0 left-0 w-64 bg-white z-50 md:hidden animate-slide-in-from-left">
-            <MobileSidebar user={user} />
+            <MobileSidebar />
           </div>
         </>
       )}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
 import { updateRentabilityParamsSchema } from '@/lib/validation/schemas';
 import { calculateRentabilityExtended, buildExtendedParams } from '@/lib/rentability/calculate';
+import { getAuthUser } from '@/lib/supabase/auth';
 import type { AICostEstimation } from '@/types';
 
 /**
@@ -13,11 +14,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
+    const user = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const property = await prisma.property.findUnique({
       where: { id: params.id },
     });
 
-    if (!property) {
+    if (!property || property.userId !== user.id) {
       return NextResponse.json(
         { error: 'Property not found' },
         { status: 404 }
@@ -43,12 +49,17 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
+    const user = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Get current property data
     const property = await prisma.property.findUnique({
       where: { id: params.id },
     });
 
-    if (!property) {
+    if (!property || property.userId !== user.id) {
       return NextResponse.json(
         { error: 'Property not found' },
         { status: 404 }
@@ -123,6 +134,20 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
+    const user = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verify ownership
+    const property = await prisma.property.findUnique({
+      where: { id: params.id },
+      select: { userId: true },
+    });
+    if (!property || property.userId !== user.id) {
+      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+    }
+
     // Delete associated scraping jobs first
     await prisma.scrapingJob.deleteMany({
       where: { propertyId: params.id },
