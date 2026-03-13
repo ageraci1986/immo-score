@@ -161,12 +161,15 @@ export async function processScrapingJob(jobId: string): Promise<void> {
 
       console.log(`Successfully scraped job ${jobId}`);
 
-      // Trigger analysis in the background (don't wait)
-      fetch(`${process.env['NEXT_PUBLIC_APP_URL']}/api/analysis/process`, {
-        method: 'POST',
-      }).catch((error) => {
-        console.error('Failed to trigger analysis:', error);
-      });
+      // Trigger analysis in the background (only when running locally, not on Vercel)
+      const appUrl = process.env['NEXT_PUBLIC_APP_URL'];
+      if (appUrl) {
+        fetch(`${appUrl}/api/analysis/process`, {
+          method: 'POST',
+        }).catch((error) => {
+          console.error('Failed to trigger analysis:', error);
+        });
+      }
     } else {
       // Mark job as failed
       await prisma.scrapingJob.update({

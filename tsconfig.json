@@ -83,6 +83,7 @@
     "out",
     "dist",
     "build",
-    "coverage"
+    "coverage",
+    "scraping-service"
   ]
 }

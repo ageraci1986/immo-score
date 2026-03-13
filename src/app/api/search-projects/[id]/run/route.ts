@@ -3,7 +3,7 @@ import { getAuthUser } from '@/lib/supabase/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { prisma } from '@/lib/db/client';
 import { runCheckSchema } from '@/lib/validation/search-project-schemas';
-import { scrapeImmowebSearchPage } from '@/lib/scraping/scrapers/immoweb-search-scraper';
+import { scrapeSearchPages } from '@/lib/scraping/search-scraper-adapter';
 import type {
   SearchProjectRow,
   SearchProjectListingRow,
@@ -107,7 +107,7 @@ async function processRunCheck(
     // Step 1: Scrape search page
     let searchResults: ImmowebSearchResult[];
     try {
-      searchResults = await scrapeImmowebSearchPage(typedProject.search_url);
+      searchResults = await scrapeSearchPages(typedProject.search_url);
     } catch (scrapeError) {
       const errorMessage =
         scrapeError instanceof Error ? scrapeError.message : 'Scraping failed';
@@ -199,16 +199,19 @@ async function processRunCheck(
               },
             });
 
-            // Trigger scraping + analysis for this property
-            const appUrl = process.env['NEXT_PUBLIC_APP_URL'];
-            await fetch(`${appUrl}/api/scraping/process`, { method: 'POST' });
+            // Process scraping + analysis directly (works on Vercel, no internal HTTP calls)
+            const { processScrapingJob } = await import('@/lib/scraping/scraping-worker');
+            const job = await prisma.scrapingJob.findFirst({
+              where: { propertyId: property.id, status: 'PENDING' },
+              select: { id: true },
+            });
+            if (job) {
+              await processScrapingJob(job.id);
+            }
 
-            // Wait a bit for scraping to complete, then trigger analysis
-            await new Promise((resolve) => setTimeout(resolve, 5000));
-            await fetch(`${appUrl}/api/analysis/process`, { method: 'POST' });
-
-            // Wait for analysis to complete
-            await waitForPropertyCompletion(property.id, 120000);
+            // Run analysis directly
+            const { processPropertyAnalysis } = await import('@/lib/analysis/analysis-worker');
+            await processPropertyAnalysis(property.id);
 
             // Get the completed property
             const completedProperty = await prisma.property.findUnique({
@@ -360,31 +363,3 @@ async function processRunCheck(
   }
 }
 
-/**
- * Polls until a property reaches COMPLETED or ERROR status, or times out.
- */
-async function waitForPropertyCompletion(
-  propertyId: string,
-  timeoutMs: number
-): Promise<void> {
-  const start = Date.now();
-  const pollInterval = 3000;
-
-  while (Date.now() - start < timeoutMs) {
-    const property = await prisma.property.findUnique({
-      where: { id: propertyId },
-      select: { status: true },
-    });
-
-    if (
-      property?.status === 'COMPLETED' ||
-      property?.status === 'ERROR'
-    ) {
-      return;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
-
-  console.warn(`[SearchProject] Property ${propertyId} analysis timed out`);
-}

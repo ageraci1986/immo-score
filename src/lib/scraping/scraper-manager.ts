@@ -1,46 +1,32 @@
-import type { Scraper, ScraperResult } from './types';
-import { ImmowebPlaywrightScraper } from './scrapers/immoweb-playwright-scraper';
+import type { ScraperResult } from './types';
+import { scrapeListingRemote } from './scraping-api-client';
 
 /**
- * Manager for all scrapers
+ * Manager for all scrapers.
+ * Delegates scraping to the remote scraping service (Railway).
  */
 export class ScraperManager {
-  private scrapers: Scraper[] = [];
-
-  constructor() {
-    // Register all available scrapers (using Playwright for maximum stealth)
-    this.scrapers.push(new ImmowebPlaywrightScraper());
-  }
-
   /**
-   * Find the appropriate scraper for a URL
-   */
-  findScraperForUrl(url: string): Scraper | null {
-    return this.scrapers.find((scraper) => scraper.canHandle(url)) || null;
-  }
-
-  /**
-   * Scrape a URL using the appropriate scraper
+   * Scrape a URL via the remote scraping service
    */
   async scrapeUrl(url: string): Promise<ScraperResult> {
-    const scraper = this.findScraperForUrl(url);
-
-    if (!scraper) {
-      return {
-        success: false,
-        error: 'No scraper found for this URL',
-      };
+    if (!url.includes('immoweb.be')) {
+      return { success: false, error: 'No scraper found for this URL' };
     }
 
-    console.log(`Using ${scraper.getName()} scraper for ${url}`);
-    return await scraper.scrape(url);
-  }
-
-  /**
-   * Get all registered scrapers
-   */
-  getAvailableScrapers(): readonly Scraper[] {
-    return this.scrapers;
+    try {
+      const result = await scrapeListingRemote(url);
+      return {
+        success: result.success,
+        data: result.data,
+        error: result.error,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Remote scraping failed',
+      };
+    }
   }
 }
 

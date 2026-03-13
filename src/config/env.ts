@@ -35,6 +35,10 @@ const envSchema = z.object({
   // Cron security
   CRON_SECRET: z.string().min(1).optional(),
 
+  // Remote scraping service (Railway)
+  SCRAPING_SERVICE_URL: z.string().url(),
+  SCRAPING_API_SECRET: z.string().min(1),
+
   // Feature flags (optional)
   NEXT_PUBLIC_ENABLE_ANALYTICS: z
     .string()
