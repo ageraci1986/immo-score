@@ -74,16 +74,26 @@ export async function processScrapingJob(jobId: string): Promise<void> {
 
       console.log(`Scraped ${photos.length} photos for property ${job.propertyId}`);
 
-      // Clean up whitespace in text fields
+      // Clean up whitespace in text fields (single-line: collapse all whitespace)
       const cleanText = (text: string | undefined): string | undefined =>
         text ? text.replace(/\s+/g, ' ').trim() : undefined;
+
+      // Clean description: preserve paragraph structure but clean each line
+      const cleanDescription = (text: string | undefined): string | undefined => {
+        if (!text) return undefined;
+        return text
+          .split(/\n+/)
+          .map((line) => line.replace(/\s+/g, ' ').trim())
+          .filter((line) => line.length > 0)
+          .join('\n');
+      };
 
       // Update property with scraped data
       await prisma.property.update({
         where: { id: job.propertyId },
         data: {
           title: cleanText(result.data.title),
-          description: cleanText(result.data.description),
+          description: cleanDescription(result.data.description),
           price: result.data.price,
           location: cleanText(result.data.location),
           address: cleanText(result.data.address),
@@ -152,7 +162,7 @@ export async function processScrapingJob(jobId: string): Promise<void> {
       console.log(`Successfully scraped job ${jobId}`);
 
       // Trigger analysis in the background (don't wait)
-      fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/analysis/process`, {
+      fetch(`${process.env['NEXT_PUBLIC_APP_URL']}/api/analysis/process`, {
         method: 'POST',
       }).catch((error) => {
         console.error('Failed to trigger analysis:', error);

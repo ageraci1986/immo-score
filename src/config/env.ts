@@ -28,6 +28,13 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 
+  // Resend (email)
+  RESEND_API_KEY: z.string().min(1).optional(),
+  RESEND_FROM_EMAIL: z.string().email().optional(),
+
+  // Cron security
+  CRON_SECRET: z.string().min(1).optional(),
+
   // Feature flags (optional)
   NEXT_PUBLIC_ENABLE_ANALYTICS: z
     .string()

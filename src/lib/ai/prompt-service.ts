@@ -10,6 +10,7 @@ export const PROMPT_SLUGS = {
   VISION_ANALYSIS: 'vision-analysis',
   NARRATIVE_GENERATION: 'narrative-generation',
   COST_ESTIMATION: 'cost-estimation',
+  EMAIL_SUMMARY: 'email-summary',
 } as const;
 
 export type PromptSlug = (typeof PROMPT_SLUGS)[keyof typeof PROMPT_SLUGS];
@@ -314,6 +315,15 @@ export async function seedDefaultPrompts(): Promise<void> {
       temperature: 0.3,
       content: COST_ESTIMATION_PROMPT,
     },
+    {
+      slug: PROMPT_SLUGS.EMAIL_SUMMARY,
+      name: 'Résumé Email',
+      description: 'Génère un résumé court et percutant d\'un bien pour les alertes email',
+      model: 'claude-sonnet-4-20250514',
+      maxTokens: 1024,
+      temperature: 0.4,
+      content: EMAIL_SUMMARY_PROMPT,
+    },
   ];
 
   for (const prompt of defaults) {
@@ -375,6 +385,14 @@ INSTRUCTIONS D'ANALYSE:
    - Façades: fissures, joints dégradés, peinture écaillée, traces d'humidité
    - Intérieur: état des sols, murs, plafonds, cuisine, salle de bain
 
+4. POTENTIEL DE CRÉATION DE CHAMBRES (important pour investissement en colocation):
+   - Combles: sont-ils aménageables? (hauteur sous faîte, présence de velux/fenêtres, accès)
+   - Grandes pièces: y a-t-il des pièces assez grandes pour être divisées en 2 chambres?
+   - Garage/annexe: convertible en chambre?
+   - Sous-sol: est-il semi-enterré avec lumière naturelle?
+   - Indique le nombre de chambres supplémentaires réalistes à créer
+   - Si aucune opportunité, indique 0
+
 Retourne UNIQUEMENT un JSON valide:
 {
   "roofEstimate": {
@@ -405,6 +423,11 @@ Retourne UNIQUEMENT un JSON valide:
     "kitchen": "moderne" | "fonctionnelle" | "à rénover" | "unknown",
     "bathrooms": "moderne" | "fonctionnelle" | "à rénover" | "unknown",
     "workEstimate": "minimal" | "moderate" | "significant" | "major"
+  },
+  "roomCreationPotential": {
+    "possibleExtraRooms": <nombre de chambres supplémentaires créables (0 si aucune)>,
+    "opportunities": ["combles aménageables", "grande pièce divisible", "garage convertible", etc.],
+    "reasoning": "<explication courte: pourquoi ces chambres sont créables ou non>"
   }
 }
 
@@ -481,6 +504,13 @@ IMPORTANT - Règles d'estimation:
 2. Châssis/fenêtres: si PEB mauvais (D, E, F, G), prévoir remplacement
 3. Chauffage: si ancien système, prévoir mise à jour (pompe à chaleur, chaudière condensation)
 
+Contexte d'investissement:
+- Type d'investissement: {{investmentType}}
+- Loyer par unité configuré: {{rentPerUnit}}€
+- Chambres supplémentaires potentielles (d'après analyse visuelle): {{potentialExtraRooms}}
+
+Si l'investisseur prévoit de créer des chambres supplémentaires (combles, division de pièces), inclus le coût des travaux d'aménagement dans le breakdown (poste "roomCreation").
+
 Estime:
 1. Le coût total des travaux avec détail par poste
 2. L'assurance annuelle (habitation + incendie)
@@ -501,6 +531,7 @@ Retourne UNIQUEMENT un JSON valide avec cette structure exacte:
     "painting": 2000,
     "electrical": 2000,
     "plumbing": 1500,
+    "roomCreation": 0,
     "other": 0
   },
   "estimatedInsurance": 350,
@@ -509,3 +540,32 @@ Retourne UNIQUEMENT un JSON valide avec cette structure exacte:
   "confidence": 0.7,
   "reasoning": "Explication détaillée: isolation toiture X m² à Y€/m², isolation façades X façades de Y m² à Z€/m², etc."
 }`;
+
+const EMAIL_SUMMARY_PROMPT = `Tu es un expert en investissement immobilier belge. Rédige un résumé concis pour une alerte email destinée à un investisseur.
+
+IMPORTANT: Les chiffres clés (rendement, cash flow, coût travaux) sont déjà affichés séparément dans l'email. Ne les répète PAS. Concentre-toi sur l'analyse QUALITATIVE.
+
+Données du bien:
+- Titre: {{title}}
+- Localisation: {{location}}
+- Prix: {{price}}€
+- Surface: {{surface}} m²
+- Chambres: {{bedrooms}}
+- Score Immo-Score: {{score}}/100
+- PEB: {{peb}}
+
+Analyse AI:
+- Points forts: {{pros}}
+- Points faibles: {{cons}}
+- Rendement net: {{netYield}}%
+- Cash flow mensuel: {{cashFlow}}€
+- Coût travaux estimé: {{workCost}}€
+
+Rédige 2-3 phrases qui:
+1. Donnent un verdict clair (opportunité intéressante, à surveiller, risquée...)
+2. Expliquent POURQUOI (localisation, état, potentiel de plus-value...)
+3. Signalent LE point d'attention le plus important
+
+Ton: direct, expert, comme un conseil entre investisseurs. Pas de formules de politesse.
+
+Retourne UNIQUEMENT le texte du résumé, sans guillemets, sans JSON, sans markdown.`;

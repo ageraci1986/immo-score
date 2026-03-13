@@ -69,6 +69,7 @@ export async function processPropertyAnalysis(propertyId: string): Promise<void>
     // Try vision analysis, fallback to defaults if it fails
     let visionAnalysis: VisionAnalysis | null = null;
     let costEstimation: AICostEstimation | null = null;
+    let potentialExtraRooms = 0;
 
     try {
       // Step 1: Vision Analysis (using public URLs directly - no base64 conversion)
@@ -80,8 +81,19 @@ export async function processPropertyAnalysis(propertyId: string): Promise<void>
         price: property.price ?? undefined,
       });
 
+      // Extract room creation potential from vision analysis
+      const roomCreation = (visionAnalysis as unknown as Record<string, unknown>)['roomCreationPotential'] as {
+        possibleExtraRooms?: number;
+        opportunities?: string[];
+        reasoning?: string;
+      } | undefined;
+      potentialExtraRooms = roomCreation?.possibleExtraRooms ?? 0;
+
+      // Extract project-level config
+      const projectConfig = property.customParams as { propertyType?: string; rentPerUnit?: number } | null;
+
       // Step 2: Cost Estimation
-      console.log(`Running cost estimation for property ${propertyId}`);
+      console.log(`Running cost estimation for property ${propertyId} (extraRooms: ${potentialExtraRooms})`);
       costEstimation = await estimatePropertyCosts(
         {
           location: property.location ?? undefined,
@@ -91,6 +103,9 @@ export async function processPropertyAnalysis(propertyId: string): Promise<void>
           constructionYear: property.constructionYear ?? undefined,
           peb: property.peb ?? undefined,
           price: property.price ?? undefined,
+          investmentType: projectConfig?.propertyType ?? undefined,
+          rentPerUnit: projectConfig?.rentPerUnit ?? undefined,
+          potentialExtraRooms,
         },
         visionAnalysis
       );
@@ -107,7 +122,7 @@ export async function processPropertyAnalysis(propertyId: string): Promise<void>
 
     // Step 3: Calculate Rentability
     console.log(`Calculating rentability for property ${propertyId}`);
-    const rentabilityData = calculatePropertyRentability(property, costEstimation);
+    const rentabilityData = calculatePropertyRentability(property, costEstimation, potentialExtraRooms);
 
     // Step 4: Generate Narrative (pros, cons, insights)
     console.log(`Generating narrative for property ${propertyId}`);
@@ -145,7 +160,20 @@ export async function processPropertyAnalysis(propertyId: string): Promise<void>
       console.warn(`Narrative generation failed for property ${propertyId}, continuing without:`, narrativeError);
     }
 
-    // Step 5: Update property with all results
+    // Step 5: Calculate investment score (0-100)
+    const aiScore = calculateInvestmentScore({
+      netYield: rentabilityData.netYield,
+      grossYield: rentabilityData.grossYield,
+      monthlyCashFlow: rentabilityData.monthlyCashFlow,
+      workCostRatio: property.price ? costEstimation.estimatedWorkCost / property.price : 0.3,
+      roofCondition: visionAnalysis.roofEstimate?.condition ?? 'fair',
+      facadeCondition: visionAnalysis.facadeEstimate?.condition ?? 'fair',
+      interiorCondition: visionAnalysis.interiorCondition?.overall ?? 'fair',
+      peb: property.peb ?? undefined,
+      pricePerSqm: property.price && property.surface ? property.price / property.surface : undefined,
+    });
+
+    // Step 6: Update property with all results
     await prisma.property.update({
       where: { id: propertyId },
       data: {
@@ -156,6 +184,7 @@ export async function processPropertyAnalysis(propertyId: string): Promise<void>
         aiEstimations: JSON.parse(JSON.stringify(costEstimation)),
         rentabilityData: JSON.parse(JSON.stringify(rentabilityData)),
         rentabilityRate: rentabilityData.netYield,
+        aiScore,
         status: 'COMPLETED',
       },
     });
@@ -200,6 +229,7 @@ async function processWithoutVision(
     location: string | null;
     propertyType: string | null;
     cadastralIncome: number | null;
+    customParams?: unknown;
   }
 ): Promise<void> {
   // Create default vision analysis
@@ -254,6 +284,19 @@ async function processWithoutVision(
   // Calculate rentability
   const rentabilityData = calculatePropertyRentability(property, defaultCostEstimation);
 
+  // Calculate investment score
+  const aiScore = calculateInvestmentScore({
+    netYield: rentabilityData.netYield,
+    grossYield: rentabilityData.grossYield,
+    monthlyCashFlow: rentabilityData.monthlyCashFlow,
+    workCostRatio: property.price ? defaultCostEstimation.estimatedWorkCost / property.price : 0.3,
+    roofCondition: 'fair',
+    facadeCondition: 'fair',
+    interiorCondition: 'fair',
+    peb: undefined,
+    pricePerSqm: property.price && property.surface ? property.price / property.surface : undefined,
+  });
+
   // Update property
   await prisma.property.update({
     where: { id: property.id },
@@ -262,13 +305,23 @@ async function processWithoutVision(
       aiEstimations: JSON.parse(JSON.stringify(defaultCostEstimation)),
       rentabilityData: JSON.parse(JSON.stringify(rentabilityData)),
       rentabilityRate: rentabilityData.netYield,
+      aiScore,
       status: 'COMPLETED',
     },
   });
 }
 
 /**
- * Calculate rentability for a property using cost estimation
+ * Property type configuration for rent calculation
+ */
+interface ProjectRentConfig {
+  readonly propertyType?: string;
+  readonly rentPerUnit?: number;
+}
+
+/**
+ * Calculate rentability for a property using cost estimation.
+ * Uses project-level propertyType and rentPerUnit when available.
  */
 function calculatePropertyRentability(
   property: {
@@ -276,18 +329,146 @@ function calculatePropertyRentability(
     surface: number | null;
     bedrooms: number | null;
     cadastralIncome: number | null;
+    customParams?: unknown;
   },
-  costEstimation: AICostEstimation
+  costEstimation: AICostEstimation,
+  extraRooms?: number,
 ): RentabilityResultsExtended {
   const purchasePrice = property.price ?? 0;
+
+  // Extract project-level config from customParams
+  const projectConfig = property.customParams as ProjectRentConfig | null;
+  const propertyType = projectConfig?.propertyType;
+  const rentPerUnit = projectConfig?.rentPerUnit;
+
+  // Determine rent calculation based on property type
+  let rentCalculationMode: 'per_room' | 'global' = 'per_room';
+  let rentPerRoom = costEstimation.rentPerRoom;
+  let numberOfRooms = (property.bedrooms ?? 2) + (extraRooms ?? 0);
+  let monthlyRent: number | undefined;
+
+  if (propertyType && rentPerUnit) {
+    switch (propertyType) {
+      case 'colocation':
+        // Rent per room × number of rooms (including potential extra rooms)
+        rentCalculationMode = 'per_room';
+        rentPerRoom = rentPerUnit;
+        break;
+      case 'logement_seul':
+      case 'appartement':
+        // Fixed total rent
+        rentCalculationMode = 'global';
+        monthlyRent = rentPerUnit;
+        break;
+      case 'immeuble_rapport':
+        // Rent per unit × number of units (use bedrooms as proxy for units)
+        rentCalculationMode = 'per_room';
+        rentPerRoom = rentPerUnit;
+        break;
+      default:
+        rentPerRoom = rentPerUnit;
+    }
+  }
+
   const params = buildExtendedParams({
-    bedrooms: property.bedrooms ?? 2,
+    bedrooms: numberOfRooms,
+    numberOfRooms,
     cadastralIncome: property.cadastralIncome ?? 800,
     estimatedWorkCost: costEstimation.estimatedWorkCost,
     insuranceYearly: costEstimation.estimatedInsurance,
-    rentPerRoom: costEstimation.rentPerRoom,
+    rentPerRoom,
+    rentCalculationMode,
+    monthlyRent,
   });
 
   return calculateRentabilityExtended({ ...params, purchasePrice });
+}
+
+/**
+ * Calculates an investment score from 0 to 100.
+ * 100 = perfect investment, 0 = avoid at all costs.
+ *
+ * Weighting:
+ * - Rentability (40%): net yield and cash flow
+ * - Property condition (25%): roof, facade, interior state
+ * - Investment profile (20%): work cost ratio, price/m²
+ * - Energy / PEB (15%): energy performance certificate
+ */
+interface InvestmentScoreInput {
+  netYield: number;
+  grossYield: number;
+  monthlyCashFlow: number;
+  workCostRatio: number;
+  roofCondition: string;
+  facadeCondition: string;
+  interiorCondition: string;
+  peb?: string;
+  pricePerSqm?: number;
+}
+
+function calculateInvestmentScore(input: InvestmentScoreInput): number {
+  // ── Rentability score (0-100, weight 40%) ──
+  // Net yield: 0% → 0pts, 4% → 50pts, 8%+ → 100pts
+  const yieldScore = Math.min(100, Math.max(0, (input.netYield / 8) * 100));
+
+  // Cash flow bonus: positive cash flow is great
+  const cashFlowScore = input.monthlyCashFlow > 0
+    ? Math.min(100, 50 + input.monthlyCashFlow / 10)
+    : Math.max(0, 50 + input.monthlyCashFlow / 5);
+
+  const rentabilityScore = yieldScore * 0.7 + cashFlowScore * 0.3;
+
+  // ── Condition score (0-100, weight 25%) ──
+  const conditionMap: Record<string, number> = {
+    good: 90,
+    fair: 60,
+    poor: 25,
+    unknown: 50,
+  };
+
+  const roofScore = conditionMap[input.roofCondition] ?? 50;
+  const facadeScore = conditionMap[input.facadeCondition] ?? 50;
+  const interiorScore = conditionMap[input.interiorCondition] ?? 50;
+
+  const conditionScore = roofScore * 0.35 + facadeScore * 0.25 + interiorScore * 0.4;
+
+  // ── Investment profile (0-100, weight 20%) ──
+  // Work cost ratio: 0% → 100pts, 15% → 60pts, 30%+ → 20pts
+  const workScore = Math.max(0, Math.min(100, 100 - input.workCostRatio * 300));
+
+  // Price per sqm: Belgium average ~1500-2500€/m², lower is better for investment
+  let pricePerSqmScore = 50;
+  if (input.pricePerSqm) {
+    if (input.pricePerSqm < 1000) pricePerSqmScore = 95;
+    else if (input.pricePerSqm < 1500) pricePerSqmScore = 80;
+    else if (input.pricePerSqm < 2000) pricePerSqmScore = 65;
+    else if (input.pricePerSqm < 2500) pricePerSqmScore = 50;
+    else if (input.pricePerSqm < 3000) pricePerSqmScore = 35;
+    else pricePerSqmScore = 20;
+  }
+
+  const investmentScore = workScore * 0.6 + pricePerSqmScore * 0.4;
+
+  // ── PEB / Energy score (0-100, weight 15%) ──
+  const pebMap: Record<string, number> = {
+    A: 100, 'A+': 100, 'A++': 100,
+    B: 85,
+    C: 70,
+    D: 55,
+    E: 40,
+    F: 25,
+    G: 10,
+  };
+
+  const pebScore = input.peb ? (pebMap[input.peb.toUpperCase()] ?? 50) : 50;
+
+  // ── Weighted total ──
+  const totalScore =
+    rentabilityScore * 0.40 +
+    conditionScore * 0.25 +
+    investmentScore * 0.20 +
+    pebScore * 0.15;
+
+  return Math.round(Math.min(100, Math.max(0, totalScore)));
 }
 

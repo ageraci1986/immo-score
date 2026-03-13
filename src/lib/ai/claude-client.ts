@@ -189,6 +189,54 @@ function parseNarrativeResponse(
 }
 
 /**
+ * Generates a short AI summary for email alerts
+ */
+export async function generateEmailSummary(
+  propertyData: {
+    readonly title?: string;
+    readonly location?: string;
+    readonly price?: number;
+    readonly surface?: number;
+    readonly bedrooms?: number;
+    readonly peb?: string;
+    readonly aiScore?: number;
+    readonly aiAnalysis?: {
+      readonly pros?: string[];
+      readonly cons?: string[];
+    };
+    readonly rentabilityData?: {
+      readonly netYield?: number;
+      readonly monthlyCashFlow?: number;
+    };
+    readonly aiEstimations?: {
+      readonly estimatedWorkCost?: number;
+    };
+  }
+): Promise<string> {
+  try {
+    const summary = await runPrompt(PROMPT_SLUGS.EMAIL_SUMMARY, {
+      title: propertyData.title ?? 'Bien immobilier',
+      location: propertyData.location ?? 'Non spécifié',
+      price: propertyData.price ?? 0,
+      surface: propertyData.surface ?? 0,
+      bedrooms: propertyData.bedrooms ?? 0,
+      score: propertyData.aiScore ? Math.round(propertyData.aiScore) : 0,
+      peb: propertyData.peb ?? 'Non disponible',
+      pros: propertyData.aiAnalysis?.pros?.join(', ') ?? 'Non disponible',
+      cons: propertyData.aiAnalysis?.cons?.join(', ') ?? 'Non disponible',
+      netYield: propertyData.rentabilityData?.netYield ?? 0,
+      cashFlow: propertyData.rentabilityData?.monthlyCashFlow ?? 0,
+      workCost: propertyData.aiEstimations?.estimatedWorkCost ?? 0,
+    });
+
+    return summary.trim();
+  } catch (error) {
+    logError('Email summary generation failed', error as Error);
+    return '';
+  }
+}
+
+/**
  * Property data for cost estimation
  */
 interface CostEstimationPropertyData {
@@ -199,6 +247,9 @@ interface CostEstimationPropertyData {
   readonly constructionYear?: number;
   readonly peb?: string;
   readonly price?: number;
+  readonly investmentType?: string;
+  readonly rentPerUnit?: number;
+  readonly potentialExtraRooms?: number;
 }
 
 /**
@@ -235,6 +286,9 @@ export async function estimatePropertyCosts(
       facadeWorkNeeded: visionAnalysis.facadeEstimate.workNeeded?.join(', ') ?? '',
       interiorCondition: visionAnalysis.interiorCondition?.overall ?? '',
       interiorWorkEstimate: visionAnalysis.interiorCondition?.workEstimate ?? '',
+      investmentType: propertyData.investmentType ?? 'colocation',
+      rentPerUnit: propertyData.rentPerUnit ?? 350,
+      potentialExtraRooms: propertyData.potentialExtraRooms ?? 0,
     });
 
     const estimation = parseCostEstimationResponse(responseText);

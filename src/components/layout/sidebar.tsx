@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   Home,
   BarChart3,
+  Radar,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
   { href: '/properties', label: 'Mes Biens', icon: Home },
+  { href: '/search-projects', label: 'Veille Immobilière', icon: Radar },
   { href: '/reports', label: 'Rapports', icon: BarChart3 },
 ];
 

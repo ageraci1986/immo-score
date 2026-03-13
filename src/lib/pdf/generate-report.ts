@@ -480,3 +480,132 @@ export function generatePropertyReport(property: Property): void {
   const fileName = `rapport-${property.title?.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '-') || property.id}-${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
 }
+
+/**
+ * Generates a property report PDF and returns it as a Buffer (for email attachments).
+ * Uses the same rendering logic as generatePropertyReport.
+ */
+export function generatePropertyReportBuffer(
+  property: Pick<Property, 'id' | 'title' | 'price' | 'location' | 'surface' | 'bedrooms' | 'aiScore' | 'aiAnalysis' | 'photos'>
+): Buffer | null {
+  try {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let yPosition = margin;
+
+    // Simplified PDF — header + key info + score
+    // Header
+    doc.setFillColor(30, 64, 175);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Immo-Score', margin, 25);
+    doc.setFontSize(10);
+    doc.text('Rapport d\'analyse immobilière', margin, 34);
+
+    yPosition = 55;
+    doc.setTextColor(0, 0, 0);
+
+    // Title
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    const title = property.title || 'Bien immobilier';
+    doc.text(title, margin, yPosition);
+    yPosition += 10;
+
+    // Location & Price
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    if (property.location) {
+      doc.text(property.location, margin, yPosition);
+      yPosition += 7;
+    }
+    if (property.price) {
+      doc.text(`Prix: ${property.price.toLocaleString('fr-FR')} €`, margin, yPosition);
+      yPosition += 7;
+    }
+    if (property.surface) {
+      doc.text(`Surface: ${property.surface} m²`, margin, yPosition);
+      yPosition += 7;
+    }
+
+    // Score
+    yPosition += 10;
+    const score = property.aiScore ? Math.round(property.aiScore) : null;
+    if (score !== null) {
+      const scoreColor: [number, number, number] = score >= 70 ? [34, 197, 94] : score >= 50 ? [234, 179, 8] : [239, 68, 68];
+      doc.setFillColor(...scoreColor);
+      doc.roundedRect(margin, yPosition - 6, 80, 20, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Score: ${score}/100`, margin + 10, yPosition + 7);
+      doc.setTextColor(0, 0, 0);
+      yPosition += 25;
+    }
+
+    // AI Analysis
+    const analysis = property.aiAnalysis as {
+      pros?: string[];
+      cons?: string[];
+      narrative?: string;
+    } | null;
+
+    if (analysis) {
+      if (analysis.narrative) {
+        yPosition += 5;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const lines = doc.splitTextToSize(analysis.narrative, pageWidth - margin * 2);
+        doc.text(lines, margin, yPosition);
+        yPosition += lines.length * 5 + 10;
+      }
+
+      if (analysis.pros && analysis.pros.length > 0) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(34, 197, 94);
+        doc.text('Points forts', margin, yPosition);
+        yPosition += 7;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        for (const pro of analysis.pros.slice(0, 5)) {
+          doc.text(`• ${pro}`, margin + 5, yPosition);
+          yPosition += 6;
+        }
+        yPosition += 5;
+      }
+
+      if (analysis.cons && analysis.cons.length > 0) {
+        doc.setTextColor(239, 68, 68);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Points faibles', margin, yPosition);
+        yPosition += 7;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        for (const con of analysis.cons.slice(0, 5)) {
+          doc.text(`• ${con}`, margin + 5, yPosition);
+          yPosition += 6;
+        }
+      }
+    }
+
+    // Footer
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(8);
+    doc.text(
+      `Généré par Immo-Score le ${new Date().toLocaleDateString('fr-FR')}`,
+      margin,
+      doc.internal.pageSize.getHeight() - 10
+    );
+
+    const arrayBuffer = doc.output('arraybuffer');
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    console.error('[PDF] Failed to generate report buffer:', error);
+    return null;
+  }
+}

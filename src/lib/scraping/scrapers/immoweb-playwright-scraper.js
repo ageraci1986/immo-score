@@ -417,11 +417,17 @@ class ImmowebPlaywrightScraper {
           // Price
           result.price = classified.price?.mainValue || classified.transaction?.sale?.price || undefined;
 
-          // Title - combine type + transaction
-          const type = classified.property?.type || '';
-          const subtype = classified.property?.subtype || '';
-          const transType = classified.transaction?.type || '';
-          result.title = `${subtype || type} - ${transType}`.trim();
+          // Title - always prefer the H1 from the page (real estate agent's title)
+          const h1El = document.querySelector('h1');
+          if (h1El) {
+            result.title = h1El.textContent.trim().replace(/\s+/g, ' ');
+          }
+          // Fallback: build from classified data if no H1
+          if (!result.title) {
+            const subtype = classified.property?.subtype || classified.property?.type || '';
+            const locality = classified.property?.location?.locality || '';
+            result.title = [subtype, locality].filter(Boolean).join(' à ') || undefined;
+          }
 
           // Location
           const loc = classified.property?.location || {};
@@ -465,8 +471,16 @@ class ImmowebPlaywrightScraper {
           // Cadastral income
           result.cadastralIncome = classified.transaction?.sale?.cadastralIncome || undefined;
 
-          // Description
-          result.description = classified.property?.description || undefined;
+          // Description - may be a string or an object with language keys (fr, en, nl)
+          const rawDesc = classified.property?.description;
+          if (rawDesc) {
+            if (typeof rawDesc === 'string') {
+              result.description = rawDesc;
+            } else if (typeof rawDesc === 'object') {
+              // Prefer French, then English, then Dutch, then first available
+              result.description = rawDesc.fr || rawDesc.en || rawDesc.nl || Object.values(rawDesc).find(v => typeof v === 'string' && v.length > 0) || undefined;
+            }
+          }
 
           // Coordinates
           const lat = loc.latitude;
@@ -515,9 +529,11 @@ class ImmowebPlaywrightScraper {
           }
         }
 
-        // Description
-        const descEl = document.querySelector('[class*="classified__description"], [class*="description"]');
-        result.description = descEl ? descEl.textContent.trim() : undefined;
+        // Description fallback (only if not already extracted from window.classified)
+        if (!result.description) {
+          const descEl = document.querySelector('[class*="classified__description"], [class*="description"]');
+          result.description = descEl ? descEl.innerText.trim() : undefined;
+        }
 
         // Photos - comprehensive extraction
         const photoUrls = new Set();
