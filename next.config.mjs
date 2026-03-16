@@ -156,9 +156,6 @@ const nextConfig = {
     return config;
   },
 
-  // Output configuration
-  output: 'standalone',
-
   // Disable powered by header
   poweredByHeader: false,
 };
