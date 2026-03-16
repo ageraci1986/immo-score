@@ -5,6 +5,7 @@ import {
   randomDelay,
   simulateHumanBehavior,
   dismissCookieBanner,
+  checkForCaptcha,
 } from '../browser';
 import type { Browser, BrowserContext, Page } from 'playwright';
 
@@ -47,13 +48,22 @@ export async function scrapeListing(url: string): Promise<ScrapeResult> {
     await simulateHumanBehavior(page);
     await dismissCookieBanner(page);
 
+    // Check for CAPTCHA
+    const blocked = await checkForCaptcha(page);
+    if (blocked) {
+      console.log('[Listing] Blocked by DataDome — stealth was not enough');
+      await context.close();
+      await browser.close();
+      return { success: false, error: 'Blocked by DataDome CAPTCHA' };
+    }
+
     // Wait for content
     try {
       await page.waitForSelector('h1, table, [class*="classified"]', {
         timeout: 20000,
       });
     } catch {
-      console.log('[Listing] Timeout waiting for content, continuing...');
+      console.log('[Listing] Timeout waiting for content');
     }
 
     await randomDelay(2000, 4000);
@@ -71,15 +81,6 @@ export async function scrapeListing(url: string): Promise<ScrapeResult> {
 
     // Interact with carousel
     await interactWithCarousel(page);
-
-    // Check for CAPTCHA
-    const hasCaptcha = await page.evaluate(() =>
-      document.body.innerHTML.toLowerCase().includes('captcha')
-    );
-    if (hasCaptcha) {
-      console.log('[Listing] CAPTCHA detected — waiting 30s...');
-      await randomDelay(30000, 35000);
-    }
 
     // Extract data
     const data = await extractListingData(page);

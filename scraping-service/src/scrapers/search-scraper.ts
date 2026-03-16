@@ -5,6 +5,7 @@ import {
   randomDelay,
   simulateHumanBehavior,
   dismissCookieBanner,
+  checkForCaptcha,
 } from '../browser';
 import type { Browser, BrowserContext, Page } from 'playwright';
 
@@ -54,14 +55,9 @@ export async function scrapeSearchPage(url: string): Promise<SearchResult[]> {
       }
 
       // Check for CAPTCHA
-      const isCaptcha = await page.evaluate(() =>
-        document.body.innerHTML.includes('captcha-delivery.com')
-      );
-      if (isCaptcha) {
-        console.log('[Search] CAPTCHA detected — waiting 30s...');
-        await page.waitForSelector('article.card--result', { timeout: 30000 }).catch(() => {
-          console.log('[Search] CAPTCHA not resolved in time');
-        });
+      const blocked = await checkForCaptcha(page);
+      if (blocked) {
+        throw new Error('Blocked by DataDome CAPTCHA — stealth was not enough');
       }
 
       await page.waitForSelector('article[class*="card--result"]', { timeout: 15000 }).catch(() => {

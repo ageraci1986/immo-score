@@ -57,6 +57,7 @@
     "cheerio": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "inngest": "^3.52.6",
     "jspdf": "^3.0.4",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.441.0",

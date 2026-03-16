@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useProperty } from '@/hooks/use-properties';
@@ -24,8 +24,7 @@ const statusColors: Record<string, string> = {
 
 export default function PropertyDetailPage(): JSX.Element {
   const params = useParams();
-  const router = useRouter();
-  const propertyId = params.id as string;
+  const propertyId = params['id'] as string;
 
   const { data: property, isLoading, error } = useProperty(propertyId);
 
@@ -72,12 +71,12 @@ export default function PropertyDetailPage(): JSX.Element {
   const rentabilityData =
     property.rentabilityData &&
     typeof property.rentabilityData === 'object'
-      ? (property.rentabilityData as Record<string, unknown>)
+      ? (property.rentabilityData as unknown as Record<string, unknown>)
       : null;
   const aiAnalysis =
     property.aiAnalysis &&
     typeof property.aiAnalysis === 'object'
-      ? (property.aiAnalysis as Record<string, unknown>)
+      ? (property.aiAnalysis as unknown as Record<string, unknown>)
       : null;
 
   return (
@@ -150,8 +149,8 @@ export default function PropertyDetailPage(): JSX.Element {
 
         {/* Main Info */}
         <div className="mb-8 grid gap-6 lg:grid-cols-3">
-          <InfoCard title="Prix" value={property.price} format="currency" />
-          <InfoCard title="Surface" value={property.surface} format="surface" />
+          <InfoCard title="Prix" value={property.price ? Number(property.price) : null} format="currency" />
+          <InfoCard title="Surface" value={property.surface ? Number(property.surface) : null} format="surface" />
           <InfoCard
             title="Type de bien"
             value={property.propertyType ?? '-'}
@@ -177,15 +176,15 @@ export default function PropertyDetailPage(): JSX.Element {
                   <div className="space-y-2 border-t border-gray-100 pt-4">
                     <ScoreItem
                       label="État de la toiture"
-                      value={aiAnalysis.roofCondition as string}
+                      value={aiAnalysis['roofCondition'] as string}
                     />
                     <ScoreItem
                       label="État de la façade"
-                      value={aiAnalysis.facadeCondition as string}
+                      value={aiAnalysis['facadeCondition'] as string}
                     />
                     <ScoreItem
                       label="État intérieur"
-                      value={aiAnalysis.interiorCondition as string}
+                      value={aiAnalysis['interiorCondition'] as string}
                     />
                   </div>
                 )}
@@ -198,26 +197,26 @@ export default function PropertyDetailPage(): JSX.Element {
                   Rentabilité
                 </h3>
                 <div className="space-y-3">
-                  {rentabilityData.netYield !== undefined && (
+                  {rentabilityData['netYield'] !== undefined && (
                     <RentabilityItem
                       label="Rendement net"
-                      value={`${(rentabilityData.netYield as number).toFixed(2)}%`}
+                      value={`${(rentabilityData['netYield'] as number).toFixed(2)}%`}
                       highlight
                     />
                   )}
-                  {rentabilityData.grossYield !== undefined && (
+                  {rentabilityData['grossYield'] !== undefined && (
                     <RentabilityItem
                       label="Rendement brut"
-                      value={`${(rentabilityData.grossYield as number).toFixed(2)}%`}
+                      value={`${(rentabilityData['grossYield'] as number).toFixed(2)}%`}
                     />
                   )}
-                  {rentabilityData.cashFlow !== undefined && (
+                  {rentabilityData['cashFlow'] !== undefined && (
                     <RentabilityItem
                       label="Cash-flow mensuel"
                       value={new Intl.NumberFormat('fr-BE', {
                         style: 'currency',
                         currency: 'EUR',
-                      }).format(rentabilityData.cashFlow as number)}
+                      }).format(rentabilityData['cashFlow'] as number)}
                     />
                   )}
                 </div>
@@ -290,12 +289,12 @@ export default function PropertyDetailPage(): JSX.Element {
         </div>
 
         {/* Error Message */}
-        {property.status === 'ERROR' && property.errorMessage && (
+        {property.status === 'ERROR' && (property as unknown as Record<string, unknown>)['errorMessage'] && (
           <div className="mt-8 rounded-lg bg-red-50 p-6">
             <h3 className="mb-2 font-semibold text-red-900">
               Erreur lors du traitement
             </h3>
-            <p className="text-sm text-red-700">{property.errorMessage}</p>
+            <p className="text-sm text-red-700">{String((property as unknown as Record<string, unknown>)['errorMessage'])}</p>
           </div>
         )}
       </div>

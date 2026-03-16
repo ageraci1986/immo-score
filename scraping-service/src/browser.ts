@@ -1,10 +1,21 @@
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
+import { chromium } from 'playwright-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import type { Browser, BrowserContext, Page } from 'playwright';
+
+// Apply stealth plugin — patches all known detection vectors:
+// navigator.webdriver, chrome.runtime, plugins, languages,
+// WebGL, canvas fingerprint, permissions, etc.
+chromium.use(StealthPlugin());
 
 /**
- * Shared browser launch config for headless stealth mode.
+ * Launch browser with stealth plugin and residential proxy.
  */
 export async function launchBrowser(): Promise<Browser> {
-  return chromium.launch({
+  const proxyServer = process.env['PROXY_SERVER'] || 'brd.superproxy.io:33335';
+  const proxyUsername = process.env['PROXY_USERNAME'] || '';
+  const proxyPassword = process.env['PROXY_PASSWORD'] || '';
+
+  const launchOptions: Record<string, unknown> = {
     headless: true,
     args: [
       '--disable-blink-features=AutomationControlled',
@@ -12,16 +23,25 @@ export async function launchBrowser(): Promise<Browser> {
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-web-security',
-      '--ignore-certificate-errors',
-      '--ignore-certificate-errors-spki-list',
-      '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     ],
-  });
+  };
+
+  if (proxyUsername && proxyPassword) {
+    console.log(`[Browser] Using residential proxy: ${proxyServer}`);
+    launchOptions.proxy = {
+      server: `http://${proxyServer}`,
+      username: proxyUsername,
+      password: proxyPassword,
+    };
+  } else {
+    console.log('[Browser] No proxy configured — running without proxy');
+  }
+
+  return chromium.launch(launchOptions);
 }
 
 export async function createStealthContext(browser: Browser): Promise<BrowserContext> {
-  const context = await browser.newContext({
+  return browser.newContext({
     ignoreHTTPSErrors: true,
     viewport: {
       width: 1366 + Math.floor(Math.random() * 200),
@@ -31,7 +51,7 @@ export async function createStealthContext(browser: Browser): Promise<BrowserCon
     timezoneId: 'Europe/Brussels',
     colorScheme: 'light',
     userAgent:
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     extraHTTPHeaders: {
       'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
       Accept:
@@ -40,27 +60,20 @@ export async function createStealthContext(browser: Browser): Promise<BrowserCon
       DNT: '1',
       Connection: 'keep-alive',
       'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
     },
   });
-
-  return context;
 }
 
-export async function applyStealthScripts(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-    Object.defineProperty(navigator, 'languages', {
-      get: () => ['fr-FR', 'fr', 'en-US', 'en'],
-    });
-    (window as unknown as Record<string, unknown>)['chrome'] = { runtime: {} };
-
-    const originalQuery = navigator.permissions.query;
-    navigator.permissions.query = (parameters: PermissionDescriptor) =>
-      parameters.name === 'notifications'
-        ? Promise.resolve({ state: Notification.permission } as PermissionStatus)
-        : originalQuery(parameters);
-  });
+/**
+ * No longer needed — stealth plugin handles all anti-detection.
+ * Kept as no-op for backward compatibility with scrapers.
+ */
+export async function applyStealthScripts(_page: Page): Promise<void> {
+  // Stealth plugin already applied at chromium level
 }
 
 export function randomDelay(min: number, max: number): Promise<void> {
@@ -100,4 +113,31 @@ export async function dismissCookieBanner(page: Page): Promise<void> {
   } catch {
     // No cookie banner
   }
+}
+
+/**
+ * Checks if the page is blocked by DataDome CAPTCHA.
+ * Logs details for debugging.
+ */
+export async function checkForCaptcha(page: Page): Promise<boolean> {
+  const hasCaptcha = await page.evaluate(() =>
+    document.body.innerHTML.includes('captcha-delivery.com')
+    || document.body.innerHTML.includes('datadome')
+    || document.querySelector('iframe[src*="captcha-delivery.com"]') !== null
+  );
+
+  if (hasCaptcha) {
+    console.log('[CAPTCHA] DataDome protection detected on page');
+    // Log what type of block
+    const blockType = await page.evaluate(() => {
+      const html = document.body.innerHTML;
+      if (html.includes('captcha__robot')) return 'HARD_BLOCK';
+      if (html.includes('captcha__human')) return 'SLIDER_CHALLENGE';
+      if (document.querySelector('iframe[src*="captcha-delivery"]')) return 'IFRAME_CHALLENGE';
+      return 'UNKNOWN';
+    });
+    console.log(`[CAPTCHA] Block type: ${blockType}`);
+  }
+
+  return hasCaptcha;
 }
