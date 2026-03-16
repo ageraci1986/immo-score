@@ -13,11 +13,11 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
 
   // Anthropic
-  ANTHROPIC_API_KEY: z.string().startsWith('sk-ant-'),
+  ANTHROPIC_API_KEY: z.string().startsWith('sk-ant-').optional(),
 
   // Upstash Redis
-  UPSTASH_REDIS_REST_URL: z.string().url(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 
   // Sentry (optional)
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
