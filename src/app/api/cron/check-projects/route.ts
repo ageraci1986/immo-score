@@ -39,6 +39,7 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
     const appUrl = process.env['NEXT_PUBLIC_APP_URL'];
     let checkedCount = 0;
     let errorCount = 0;
+    const errorMessages: string[] = [];
 
     for (let i = 0; i < typedProjects.length; i += MAX_CONCURRENT_PROJECTS) {
       const batch = typedProjects.slice(i, i + MAX_CONCURRENT_PROJECTS);
@@ -72,6 +73,7 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
         } else {
           errorCount++;
           console.error('[Cron] Project check failed:', result.reason);
+          errorMessages.push(String(result.reason));
         }
       }
     }
@@ -81,7 +83,7 @@ async function handleCron(request: NextRequest): Promise<NextResponse> {
     );
 
     return NextResponse.json({
-      data: { checked: checkedCount, errors: errorCount },
+      data: { checked: checkedCount, errors: errorCount, errorMessages },
     });
   } catch (error) {
     console.error('[Cron] Fatal error:', error);
