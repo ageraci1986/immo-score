@@ -29,6 +29,11 @@ export async function scrapeSearchPage(url: string): Promise<SearchResult[]> {
   let browser: Browser | null = null;
   let context: BrowserContext | null = null;
 
+  // Remove orderBy param — causes redirect that times out through proxy
+  const cleanUrl = new URL(url);
+  cleanUrl.searchParams.delete('orderBy');
+  const normalizedUrl = cleanUrl.toString();
+
   try {
     browser = await launchBrowser();
     context = await createStealthContext(browser);
@@ -38,7 +43,7 @@ export async function scrapeSearchPage(url: string): Promise<SearchResult[]> {
     const allResults: SearchResult[] = [];
     const seenIds = new Set<string>();
     let currentPageNum = 1;
-    let currentUrl = url;
+    let currentUrl = normalizedUrl;
 
     while (currentPageNum <= MAX_PAGES) {
       console.log(`[Search] Page ${currentPageNum}: ${currentUrl}`);
