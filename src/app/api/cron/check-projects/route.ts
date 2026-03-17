@@ -4,12 +4,7 @@ import type { SearchProjectRow } from '@/types/search-projects';
 
 const MAX_CONCURRENT_PROJECTS = 5;
 
-/**
- * POST /api/cron/check-projects
- * Called by Vercel Cron (hourly). Checks all active projects whose next_check_at has passed.
- * Auth: CRON_SECRET header.
- */
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function handleCron(request: NextRequest): Promise<NextResponse> {
   try {
     // Verify cron secret
     const authHeader = request.headers.get('authorization');
@@ -93,3 +88,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// Vercel Cron sends GET; also export POST for manual testing
+export const GET = handleCron;
+export const POST = handleCron;

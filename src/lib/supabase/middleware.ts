@@ -52,7 +52,7 @@ export async function updateSession(request: NextRequest) {
   const isAuthApiRoute = request.nextUrl.pathname.startsWith('/api/auth');
 
   // Allow internal processing routes (called server-to-server without cookies)
-  const internalApiPaths = ['/api/scraping/process', '/api/analysis/process', '/api/inngest'];
+  const internalApiPaths = ['/api/scraping/process', '/api/analysis/process', '/api/inngest', '/api/cron'];
   const isInternalApi = internalApiPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
