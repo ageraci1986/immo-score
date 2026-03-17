@@ -111,8 +111,8 @@ export async function scrapeSearchPage(url: string): Promise<SearchResult[]> {
     console.log(`[Search] Total: ${allResults.length} listings across ${currentPageNum} page(s)`);
     return allResults;
   } finally {
-    if (context) await context.close();
-    if (browser) await browser.close();
+    try { if (context) await context.close(); } catch (e) { console.log('[Search] context.close error (ignored):', e); }
+    try { if (browser) await browser.close(); } catch (e) { console.log('[Search] browser.close error (ignored):', e); }
   }
 }
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import { scrapeListing } from './scrapers/listing-scraper';
 import { scrapeSearchPage } from './scrapers/search-scraper';
+import { launchBrowser, createStealthContext } from './browser';
 
 const app = express();
 app.use(express.json());
@@ -82,6 +83,47 @@ app.post('/scrape/search', async (req, res) => {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+});
+
+/**
+ * POST /scrape/debug
+ * Body: { url: string }
+ * Returns: raw HTML snippet + page diagnostics (for debugging only)
+ */
+app.post('/scrape/debug', async (req, res) => {
+  const { url } = req.body;
+  if (!url || typeof url !== 'string') {
+    res.status(400).json({ error: 'Missing or invalid url' });
+    return;
+  }
+
+  let browser = null;
+  let context = null;
+  try {
+    browser = await launchBrowser();
+    context = await createStealthContext(browser);
+    const page = await context.newPage();
+
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForTimeout(3000);
+
+    const info = await page.evaluate(() => ({
+      finalUrl: window.location.href,
+      title: document.title,
+      isCaptcha: document.body.innerHTML.includes('captcha-delivery.com'),
+      isDataDome: document.body.innerHTML.includes('datadome'),
+      articleCount: document.querySelectorAll('article').length,
+      cardResultCount: document.querySelectorAll('article[class*="card--result"]').length,
+      bodySnippet: document.body.innerHTML.slice(0, 2000),
+    }));
+
+    res.json({ success: true, ...info });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+  } finally {
+    try { if (context) await context.close(); } catch (_) { /* ignore */ }
+    try { if (browser) await browser.close(); } catch (_) { /* ignore */ }
   }
 });
 
