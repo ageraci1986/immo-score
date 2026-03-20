@@ -40,6 +40,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     });
 
     if (!error) {
+      // Invited users need to set their password
+      if (type === 'invite') {
+        return NextResponse.redirect(`${origin}/auth/set-password`);
+      }
       return NextResponse.redirect(redirectTo);
     }
 
