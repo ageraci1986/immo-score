@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { prisma } from '@/lib/db/client';
+import { ROLE_LABELS, type UserRole } from '@/lib/permissions';
 
 const resend = new Resend(process.env['RESEND_API_KEY']);
 
@@ -415,4 +416,101 @@ export async function sendNewListingAlert({
 
   console.log(`[Email] Resend API response:`, JSON.stringify(result));
   console.log(`[Email] Alert sent to ${recipients.join(', ')} for project "${projectName}" (${validProperties.length} listings)`);
+}
+
+interface SendInvitationParams {
+  readonly to: string;
+  readonly name: string;
+  readonly role: UserRole;
+  readonly inviteLink: string;
+}
+
+export async function sendInvitationEmail({
+  to,
+  name,
+  role,
+  inviteLink,
+}: SendInvitationParams): Promise<void> {
+  const envFrom = process.env['RESEND_FROM_EMAIL'] || '';
+  const fromEmail = envFrom.endsWith('@gmail.com') || !envFrom
+    ? 'onboarding@resend.dev'
+    : envFrom;
+  const appUrl = process.env['NEXT_PUBLIC_APP_URL'] || 'https://immo-score.com';
+  const roleLabel = ROLE_LABELS[role] || role;
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; background: #f1f5f9; -webkit-font-smoothing: antialiased;">
+
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: #f1f5f9;">
+        <tr>
+          <td align="center" style="padding: 40px 20px;">
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 520px;">
+
+              <!-- Header -->
+              <tr>
+                <td style="background: #064E3B; border-radius: 12px 12px 0 0; padding: 32px 28px; text-align: center;">
+                  <div style="font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
+                    Immo<span style="color: #10B981;">Score</span>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Body -->
+              <tr>
+                <td style="background: white; padding: 36px 28px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
+
+                  <div style="font-size: 22px; font-weight: 700; color: #1e293b; line-height: 1.3;">
+                    Bienvenue ${name} !
+                  </div>
+
+                  <div style="font-size: 15px; color: #475569; line-height: 1.7; margin-top: 16px;">
+                    Vous avez été invité(e) à rejoindre <strong>ImmoScore</strong>, la plateforme d'analyse immobilière intelligente.
+                  </div>
+
+                  <div style="margin-top: 20px; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Votre rôle</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #1e293b; margin-top: 4px;">${roleLabel}</div>
+                  </div>
+
+                  <div style="margin-top: 28px; text-align: center;">
+                    <a href="${inviteLink}" style="display: inline-block; padding: 14px 36px; background: #064E3B; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 700; letter-spacing: 0.2px;">
+                      Accepter l'invitation
+                    </a>
+                  </div>
+
+                  <div style="margin-top: 24px; font-size: 13px; color: #94a3b8; text-align: center; line-height: 1.6;">
+                    Ce lien est valable 24 heures.<br/>
+                    Si vous n'avez pas demandé cette invitation, ignorez cet email.
+                  </div>
+
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 20px 28px; text-align: center;">
+                  <div style="font-size: 11px; color: #94a3b8;">
+                    Envoyé par <a href="${appUrl}" style="color: #64748b; text-decoration: none;">ImmoScore</a>
+                  </div>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>`;
+
+  await resend.emails.send({
+    from: `ImmoScore <${fromEmail}>`,
+    to: [to],
+    subject: `Vous êtes invité(e) à rejoindre ImmoScore`,
+    html,
+  });
+
+  console.log(`[Email] Invitation sent to ${to} (role: ${role})`);
 }
