@@ -1,44 +1,51 @@
 import { createClient } from './server';
 import { prisma } from '@/lib/db/client';
+import type { UserRole } from '@/lib/permissions';
 
-interface AuthUser {
-  id: string;        // Prisma User id
-  supabaseId: string; // Supabase auth user id
+export interface AuthUser {
+  id: string;
+  supabaseId: string;
   email: string;
+  role: UserRole;
 }
 
-/**
- * Gets the authenticated user from Supabase and ensures a matching Prisma user exists.
- * Returns null if not authenticated.
- */
 export async function getAuthUser(): Promise<AuthUser | null> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user || !user.email) return null;
 
-  // Find or create the Prisma user
   const dbUser = await prisma.user.upsert({
     where: { supabaseId: user.id },
     update: { email: user.email },
     create: {
       supabaseId: user.id,
       email: user.email,
+      role: 'user_basic',
     },
-    select: { id: true, supabaseId: true, email: true },
+    select: { id: true, supabaseId: true, email: true, role: true },
   });
 
-  return dbUser;
+  return {
+    id: dbUser.id,
+    supabaseId: dbUser.supabaseId,
+    email: dbUser.email,
+    role: dbUser.role as UserRole,
+  };
 }
 
-/**
- * Requires authentication. Throws if not authenticated.
- * Use in API routes for protected endpoints.
- */
 export async function requireAuth(): Promise<AuthUser> {
   const user = await getAuthUser();
-  if (!user) {
-    throw new Error('Unauthorized');
-  }
+  if (!user) throw new Error('Unauthorized');
   return user;
+}
+
+export async function requireRole(allowedRoles: UserRole[]): Promise<AuthUser> {
+  const user = await requireAuth();
+  if (!allowedRoles.includes(user.role)) throw new Error('Forbidden');
+  return user;
+}
+
+export async function requireAdmin(): Promise<AuthUser> {
+  return requireRole(['admin']);
 }

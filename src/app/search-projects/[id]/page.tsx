@@ -21,11 +21,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SearchProjectListingRow } from '@/components/features/search-projects/SearchProjectListingRow';
 import { SearchProjectSettingsSheet } from '@/components/features/search-projects/SearchProjectSettingsSheet';
+import { ShareProjectDialog } from '@/components/features/search-projects/ShareProjectDialog';
 import {
   useSearchProject,
   useUpdateSearchProject,
   useRunCheck,
 } from '@/hooks/use-search-projects';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canShareProjects } from '@/lib/permissions';
 import { toast } from 'sonner';
 import type { SearchProjectListing } from '@/types/search-projects';
 
@@ -38,6 +41,7 @@ export default function SearchProjectDetailPage(): JSX.Element {
   const updateProject = useUpdateSearchProject(params.id);
   const runCheck = useRunCheck(params.id);
 
+  const { user: roleUser } = useUserRole();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [filter, setFilter] = useState<ListingFilter>('all');
   const [isRunning, setIsRunning] = useState(false);
@@ -149,14 +153,19 @@ export default function SearchProjectDetailPage(): JSX.Element {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsSettingsOpen(true)}
-            >
-              <Settings2 className="h-4 w-4 mr-1" />
-              Paramètres
-            </Button>
+            <div className="flex gap-2">
+              {roleUser && canShareProjects(roleUser.role) && (
+                <ShareProjectDialog projectId={params.id} projectName={project.name} />
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSettingsOpen(true)}
+              >
+                <Settings2 className="h-4 w-4 mr-1" />
+                Paramètres
+              </Button>
+            </div>
           </div>
 
           {/* Stats + Actions row */}

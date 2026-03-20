@@ -18,17 +18,35 @@ model User {
   email      String   @unique
   name       String?
   avatarUrl  String?
-  role       String   @default("user") // 'user' | 'admin'
+  role       String   @default("user_basic") // 'admin' | 'advanced' | 'user_basic' | 'viewer'
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   // Relations
   properties        Property[]
   calculationParams CalculationParams?
+  receivedShares    SearchProjectShare[] @relation("SharedWith")
+  createdShares     SearchProjectShare[] @relation("SharedBy")
 
   @@index([email])
   @@index([supabaseId])
   @@map("users")
+}
+
+// Sharing a search project with another user
+model SearchProjectShare {
+  id               String   @id @default(cuid())
+  projectId        String   // UUID of search_projects table (Supabase)
+  sharedWithUser   User     @relation("SharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+  sharedWithUserId String
+  sharedByUser     User     @relation("SharedBy", fields: [sharedByUserId], references: [id], onDelete: Cascade)
+  sharedByUserId   String
+  createdAt        DateTime @default(now())
+
+  @@unique([projectId, sharedWithUserId])
+  @@index([sharedWithUserId])
+  @@index([projectId])
+  @@map("search_project_shares")
 }
 
 // Property represents a real estate listing

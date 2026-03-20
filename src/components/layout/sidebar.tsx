@@ -11,10 +11,18 @@ import {
   Radar,
   Settings,
   LogOut,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { createClient } from '@/lib/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
+import {
+  canManageUsers,
+  canAccessSearchProjects,
+  canAccessSettings,
+  canAccessProperties,
+} from '@/lib/permissions';
 
 interface NavItem {
   href: string;
@@ -22,12 +30,7 @@ interface NavItem {
   icon: React.ElementType;
 }
 
-const mainNavItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/properties', label: 'Mes Biens', icon: Home },
-  { href: '/search-projects', label: 'Veille Immobilière', icon: Radar },
-  { href: '/reports', label: 'Rapports', icon: BarChart3 },
-];
+// Nav items are now computed per role inside the component
 
 interface UserData {
   email: string;
@@ -88,7 +91,18 @@ export function Sidebar(): JSX.Element {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthUser();
+  const { user: roleUser } = useUserRole();
   const [signingOut, setSigningOut] = useState(false);
+
+  const role = roleUser?.role ?? 'viewer';
+
+  const navItems: NavItem[] = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
+    ...(canAccessProperties(role) ? [{ href: '/properties', label: 'Mes Biens', icon: Home }] : []),
+    ...(canAccessSearchProjects(role) ? [{ href: '/search-projects', label: 'Veille Immobilière', icon: Radar }] : []),
+    ...(canAccessProperties(role) ? [{ href: '/reports', label: 'Rapports', icon: BarChart3 }] : []),
+    ...(canManageUsers(role) ? [{ href: '/admin/users', label: 'Utilisateurs', icon: Users }] : []),
+  ];
 
   const isSettingsActive = pathname === '/settings' || pathname.startsWith('/settings/');
 
@@ -114,7 +128,7 @@ export function Sidebar(): JSX.Element {
 
         {/* Main Navigation */}
         <nav className="p-4 space-y-1">
-          {mainNavItems.map((item) => (
+          {navItems.map((item) => (
             <NavLink key={item.href} item={item} pathname={pathname} />
           ))}
         </nav>
@@ -122,21 +136,23 @@ export function Sidebar(): JSX.Element {
 
       {/* Bottom section: Settings + User */}
       <div>
-        {/* Settings link */}
-        <div className="px-4 pb-2">
-          <Link
-            href="/settings"
-            className={cn(
-              'flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors',
-              isSettingsActive
-                ? 'bg-primary-900/5 text-primary-900'
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            )}
-          >
-            <Settings className="w-5 h-5 mr-3" />
-            Réglages
-          </Link>
-        </div>
+        {/* Settings link — admin only */}
+        {canAccessSettings(role) && (
+          <div className="px-4 pb-2">
+            <Link
+              href="/settings"
+              className={cn(
+                'flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors',
+                isSettingsActive
+                  ? 'bg-primary-900/5 text-primary-900'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              )}
+            >
+              <Settings className="w-5 h-5 mr-3" />
+              Réglages
+            </Link>
+          </div>
+        )}
 
         {/* User Section */}
         <div className="p-4 border-t border-slate-100 space-y-2">
@@ -171,7 +187,19 @@ export function MobileSidebar(): JSX.Element {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthUser();
+  const { user: roleUser } = useUserRole();
   const [signingOut, setSigningOut] = useState(false);
+
+  const role = roleUser?.role ?? 'viewer';
+
+  const navItems: NavItem[] = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
+    ...(canAccessProperties(role) ? [{ href: '/properties', label: 'Mes Biens', icon: Home }] : []),
+    ...(canAccessSearchProjects(role) ? [{ href: '/search-projects', label: 'Veille Immobilière', icon: Radar }] : []),
+    ...(canAccessProperties(role) ? [{ href: '/reports', label: 'Rapports', icon: BarChart3 }] : []),
+    ...(canManageUsers(role) ? [{ href: '/admin/users', label: 'Utilisateurs', icon: Users }] : []),
+    ...(canAccessSettings(role) ? [{ href: '/settings', label: 'Réglages', icon: Settings }] : []),
+  ];
 
   const handleSignOut = async (): Promise<void> => {
     setSigningOut(true);
@@ -194,15 +222,9 @@ export function MobileSidebar(): JSX.Element {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
-        {mainNavItems.map((item) => (
+        {navItems.map((item) => (
           <NavLink key={item.href} item={item} pathname={pathname} />
         ))}
-
-        {/* Settings in mobile nav */}
-        <NavLink
-          item={{ href: '/settings', label: 'Réglages', icon: Settings }}
-          pathname={pathname}
-        />
       </nav>
 
       {/* User Section */}
