@@ -8,7 +8,7 @@ import type {
   ImmowebSearchResult,
 } from '@/types/search-projects';
 
-const MAX_CONCURRENT_ANALYSES = 3;
+const MAX_CONCURRENT_ANALYSES = 1;
 const EMAIL_BATCH_SIZE = 10;
 
 /**
