@@ -57,6 +57,7 @@ export const createSearchProjectSchema = z.object({
     .min(50, 'Le loyer minimum est de 50€')
     .max(5000, 'Le loyer maximum est de 5000€')
     .default(350),
+  colocPreFilterEnabled: z.boolean().default(false),
 });
 
 /**
@@ -100,6 +101,7 @@ export const updateSearchProjectSchema = z.object({
     .min(50)
     .max(5000)
     .optional(),
+  colocPreFilterEnabled: z.boolean().optional(),
   status: z.enum(['active', 'paused']).optional(),
 });
 

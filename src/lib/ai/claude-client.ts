@@ -344,3 +344,48 @@ function parseCostEstimationResponse(text: string): AICostEstimation {
     });
   }
 }
+
+export interface ColocPreFilterResult {
+  readonly passes: boolean;
+  readonly reason: string;
+}
+
+/**
+ * Pre-filters a property for colocation potential.
+ * Checks if the property can reach ≥4 bedrooms (currently or after works).
+ * Uses a fast shortcut (no AI) when bedrooms count is unambiguous.
+ */
+export async function preFilterColocProperty(params: {
+  bedrooms: number | null;
+  title: string | null;
+  description: string | null;
+}): Promise<ColocPreFilterResult> {
+  const { bedrooms, title, description } = params;
+
+  // Fast-path: 4+ bedrooms → always passes
+  if (bedrooms !== null && bedrooms >= 4) {
+    return { passes: true, reason: `${bedrooms} chambres détectées` };
+  }
+
+  // Fast-path: 0-2 bedrooms and no description → always fails
+  if (bedrooms !== null && bedrooms <= 2 && !description) {
+    return { passes: false, reason: `Seulement ${bedrooms} chambre(s), potentiel coloc insuffisant` };
+  }
+
+  // Call AI for borderline cases (3 ch, or unknown bedrooms with description)
+  try {
+    const responseText = await runPrompt(PROMPT_SLUGS.COLOC_PRE_FILTER, {
+      bedrooms: bedrooms ?? 'inconnu',
+      title: title ?? '',
+      description: (description ?? '').slice(0, 1500),
+    });
+
+    const cleaned = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const parsed = JSON.parse(cleaned) as { passes: boolean; reason: string };
+    return { passes: Boolean(parsed.passes), reason: parsed.reason ?? '' };
+  } catch (error) {
+    logError('Coloc pre-filter failed, defaulting to pass', error as Error, params);
+    // Default to pass on error to avoid blocking valid listings
+    return { passes: true, reason: 'Erreur pré-filtre — bien conservé par défaut' };
+  }
+}

@@ -11,6 +11,7 @@ export const PROMPT_SLUGS = {
   NARRATIVE_GENERATION: 'narrative-generation',
   COST_ESTIMATION: 'cost-estimation',
   EMAIL_SUMMARY: 'email-summary',
+  COLOC_PRE_FILTER: 'coloc-pre-filter',
 } as const;
 
 export type PromptSlug = (typeof PROMPT_SLUGS)[keyof typeof PROMPT_SLUGS];

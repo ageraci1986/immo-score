@@ -124,6 +124,7 @@ export async function PATCH(
       updates['email_notifications_enabled'] = input.emailNotificationsEnabled;
     if (input.propertyType !== undefined) updates['property_type'] = input.propertyType;
     if (input.rentPerUnit !== undefined) updates['rent_per_unit'] = input.rentPerUnit;
+    if (input.colocPreFilterEnabled !== undefined) updates['coloc_pre_filter_enabled'] = input.colocPreFilterEnabled;
 
     if (input.status !== undefined) {
       updates['status'] = input.status;

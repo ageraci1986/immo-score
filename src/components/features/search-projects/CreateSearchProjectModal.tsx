@@ -68,6 +68,7 @@ export function CreateSearchProjectModal({
       emailNotificationsEnabled: true,
       propertyType: 'colocation',
       rentPerUnit: 350,
+      colocPreFilterEnabled: false,
     },
   });
 
@@ -81,6 +82,7 @@ export function CreateSearchProjectModal({
   const scoreThreshold = watch('scoreThreshold');
   const emailEnabled = watch('emailNotificationsEnabled');
   const propertyType = watch('propertyType');
+  const colocPreFilterEnabled = watch('colocPreFilterEnabled');
 
   const selectedTypeOption = PROPERTY_TYPE_OPTIONS.find((opt) => opt.value === propertyType);
 
@@ -215,6 +217,22 @@ export function CreateSearchProjectModal({
               )}
             </div>
           </div>
+
+          {/* Coloc pre-filter toggle — colocation only */}
+          {propertyType === 'colocation' && (
+            <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <div>
+                <Label className="text-sm font-medium text-amber-900">Filtre potentiel coloc</Label>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Analyse uniquement les biens avec ≥3 ch. + grenier/comble (potentiel 4 ch.)
+                </p>
+              </div>
+              <Switch
+                checked={colocPreFilterEnabled ?? false}
+                onCheckedChange={(val) => setValue('colocPreFilterEnabled', val)}
+              />
+            </div>
+          )}
 
           {/* Email toggle */}
           <div className="flex items-center justify-between rounded-lg border p-3">

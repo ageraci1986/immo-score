@@ -11,6 +11,10 @@ interface SendAlertParams {
     readonly listingId: string;
     readonly propertyId: string;
   }>;
+  readonly batchInfo?: {
+    readonly current: number;
+    readonly total: number;
+  };
 }
 
 /**
@@ -29,6 +33,7 @@ export async function sendNewListingAlert({
   projectName,
   projectId,
   qualifiedListings,
+  batchInfo,
 }: SendAlertParams): Promise<void> {
   if (qualifiedListings.length === 0) return;
 
@@ -381,10 +386,11 @@ export async function sendNewListingAlert({
     </body>
     </html>`;
 
+  const batchSuffix = batchInfo ? ` (${batchInfo.current}/${batchInfo.total})` : '';
   const subject =
     validProperties.length === 1
-      ? `📊 [${projectName}] Nouvelle annonce : ${validProperties[0]!.title || 'Bien immobilier'} (score ${validProperties[0]!.aiScore ? Math.round(validProperties[0]!.aiScore) : '?'}/100)`
-      : `📊 [${projectName}] ${validProperties.length} nouvelles annonces détectées`;
+      ? `📊 [${projectName}] Nouvelle annonce : ${validProperties[0]!.title || 'Bien immobilier'} (score ${validProperties[0]!.aiScore ? Math.round(validProperties[0]!.aiScore) : '?'}/100)${batchSuffix}`
+      : `📊 [${projectName}] ${validProperties.length} nouvelles annonces${batchSuffix}`;
 
   // Support comma-separated email addresses
   const recipients = to

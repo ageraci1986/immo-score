@@ -121,7 +121,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { name, searchUrl, scoreThreshold, checkIntervalHours, notificationEmail, emailNotificationsEnabled, propertyType, rentPerUnit } =
+    const { name, searchUrl, scoreThreshold, checkIntervalHours, notificationEmail, emailNotificationsEnabled, propertyType, rentPerUnit, colocPreFilterEnabled } =
       validation.data;
 
     const nextCheckAt = new Date(
@@ -140,6 +140,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         email_notifications_enabled: emailNotificationsEnabled ?? true,
         property_type: propertyType ?? 'colocation',
         rent_per_unit: rentPerUnit ?? 350,
+        coloc_pre_filter_enabled: colocPreFilterEnabled ?? false,
         next_check_at: nextCheckAt,
       })
       .select()

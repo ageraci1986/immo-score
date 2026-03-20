@@ -9,6 +9,7 @@ import type {
 } from '@/types/search-projects';
 
 const MAX_CONCURRENT_ANALYSES = 3;
+const EMAIL_BATCH_SIZE = 10;
 
 /**
  * Durable function: runs the full search project pipeline.
@@ -58,6 +59,7 @@ export const searchProjectRun = inngest.createFunction(
           listings_found: 0,
           new_listings: 0,
           emails_sent: 0,
+          pre_filtered_count: 0,
           triggered_by: triggeredBy,
           error_message: errorMessage,
         });
@@ -125,7 +127,9 @@ export const searchProjectRun = inngest.createFunction(
     });
 
     // Step 4: Analyze each new listing in batches
-    const analyzedListings: Array<{ listingId: string; propertyId: string }> = [];
+    // Pre-filter (coloc only) runs AFTER listing scrape but BEFORE AI analysis.
+    const analyzedListings: Array<{ listingId: string; propertyId: string; score: number | null }> = [];
+    let preFilteredCount = 0;
 
     for (let i = 0; i < newListings.length; i += MAX_CONCURRENT_ANALYSES) {
       const batch = newListings.slice(i, i + MAX_CONCURRENT_ANALYSES);
@@ -134,7 +138,8 @@ export const searchProjectRun = inngest.createFunction(
       const batchResults = await step.run(
         `analyze-batch-${batchIndex}`,
         async () => {
-          const results: Array<{ listingId: string; propertyId: string }> = [];
+          const results: Array<{ listingId: string; propertyId: string; score: number | null }> = [];
+          let batchPreFiltered = 0;
 
           const settled = await Promise.allSettled(
             batch.map(async (listing: ImmowebSearchResult) => {
@@ -163,7 +168,7 @@ export const searchProjectRun = inngest.createFunction(
                   },
                 });
 
-                // Process scraping
+                // Process listing scrape (populates bedrooms + description)
                 const { processScrapingJob } = await import(
                   '@/lib/scraping/scraping-worker'
                 );
@@ -175,7 +180,51 @@ export const searchProjectRun = inngest.createFunction(
                   await processScrapingJob(job.id);
                 }
 
-                // Run analysis
+                // ── Coloc pre-filter ──────────────────────────────────────
+                if (
+                  project.coloc_pre_filter_enabled &&
+                  project.property_type === 'colocation'
+                ) {
+                  const scrapedProperty = await prisma.property.findUnique({
+                    where: { id: property.id },
+                    select: { bedrooms: true, title: true, description: true },
+                  });
+
+                  const { preFilterColocProperty } = await import(
+                    '@/lib/ai/claude-client'
+                  );
+                  const filterResult = await preFilterColocProperty({
+                    bedrooms: scrapedProperty?.bedrooms ?? null,
+                    title: scrapedProperty?.title ?? listing.title,
+                    description: scrapedProperty?.description ?? null,
+                  });
+
+                  if (!filterResult.passes) {
+                    console.log(
+                      `[Inngest] Pre-filter FAILED for ${listing.immowebId}: ${filterResult.reason}`
+                    );
+                    // Mark as pre-filtered, skip analysis
+                    await prisma.property.update({
+                      where: { id: property.id },
+                      data: { status: 'ERROR' },
+                    });
+                    await supabase
+                      .from('search_project_listings')
+                      .update({ pre_filtered: true })
+                      .eq('project_id', projectId)
+                      .eq('immoweb_id', listing.immowebId);
+
+                    batchPreFiltered++;
+                    return; // skip analysis
+                  }
+
+                  console.log(
+                    `[Inngest] Pre-filter PASSED for ${listing.immowebId}: ${filterResult.reason}`
+                  );
+                }
+                // ─────────────────────────────────────────────────────────
+
+                // Run full AI analysis
                 const { processPropertyAnalysis } = await import(
                   '@/lib/analysis/analysis-worker'
                 );
@@ -200,6 +249,7 @@ export const searchProjectRun = inngest.createFunction(
                 results.push({
                   listingId: listing.immowebId,
                   propertyId: property.id,
+                  score,
                 });
               } catch (error) {
                 console.error(
@@ -216,31 +266,63 @@ export const searchProjectRun = inngest.createFunction(
             }
           }
 
-          return results;
+          return { results, batchPreFiltered };
         }
       );
 
-      analyzedListings.push(...batchResults);
+      analyzedListings.push(...batchResults.results);
+      preFilteredCount += batchResults.batchPreFiltered;
     }
 
     // Step 5: Send email notification
+    // Apply score threshold filter + split into batches of 10
     const emailsSent = await step.run('send-email', async () => {
       if (
-        analyzedListings.length > 0 &&
-        project.email_notifications_enabled &&
-        project.notification_email
+        analyzedListings.length === 0 ||
+        !project.email_notifications_enabled ||
+        !project.notification_email
       ) {
-        try {
-          const { sendNewListingAlert } = await import('@/lib/email/resend');
+        return 0;
+      }
+
+      // Filter by score threshold
+      const qualifiedListings = analyzedListings.filter(
+        (l) => l.score === null || l.score >= project.score_threshold
+      );
+
+      console.log(
+        `[Inngest] Email: ${analyzedListings.length} analyzed, ` +
+        `${qualifiedListings.length} above threshold (${project.score_threshold}), ` +
+        `${preFilteredCount} pre-filtered`
+      );
+
+      if (qualifiedListings.length === 0) return 0;
+
+      try {
+        const { sendNewListingAlert } = await import('@/lib/email/resend');
+
+        // Split into batches of EMAIL_BATCH_SIZE
+        let totalSent = 0;
+        for (let i = 0; i < qualifiedListings.length; i += EMAIL_BATCH_SIZE) {
+          const emailBatch = qualifiedListings.slice(i, i + EMAIL_BATCH_SIZE);
+          const batchNum = Math.floor(i / EMAIL_BATCH_SIZE) + 1;
+          const totalBatches = Math.ceil(qualifiedListings.length / EMAIL_BATCH_SIZE);
+
           await sendNewListingAlert({
             to: project.notification_email,
             projectName: project.name,
             projectId,
-            qualifiedListings: analyzedListings,
+            qualifiedListings: emailBatch.map((l) => ({
+              listingId: l.listingId,
+              propertyId: l.propertyId,
+            })),
+            batchInfo: totalBatches > 1
+              ? { current: batchNum, total: totalBatches }
+              : undefined,
           });
 
-          // Mark listings as email_sent
-          for (const ql of analyzedListings) {
+          // Mark this batch as email_sent
+          for (const ql of emailBatch) {
             await supabase
               .from('search_project_listings')
               .update({ email_sent: true })
@@ -248,13 +330,14 @@ export const searchProjectRun = inngest.createFunction(
               .eq('immoweb_id', ql.listingId);
           }
 
-          return analyzedListings.length;
-        } catch (emailError) {
-          console.error('[Inngest] Failed to send email:', emailError);
-          return 0;
+          totalSent += emailBatch.length;
         }
+
+        return totalSent;
+      } catch (emailError) {
+        console.error('[Inngest] Failed to send email:', emailError);
+        return 0;
       }
-      return 0;
     });
 
     // Step 6: Record check and update project
@@ -264,6 +347,7 @@ export const searchProjectRun = inngest.createFunction(
         listings_found: searchResults.length,
         new_listings: newListings.length,
         emails_sent: emailsSent,
+        pre_filtered_count: preFilteredCount,
         triggered_by: triggeredBy,
       });
 
@@ -287,6 +371,7 @@ export const searchProjectRun = inngest.createFunction(
       listingsFound: searchResults.length,
       newListings: newListings.length,
       analyzed: analyzedListings.length,
+      preFiltered: preFilteredCount,
       emailsSent,
     };
   }

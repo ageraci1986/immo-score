@@ -18,6 +18,7 @@ export interface SearchProjectRow {
   readonly email_notifications_enabled: boolean;
   readonly property_type: PropertyInvestmentType;
   readonly rent_per_unit: number;
+  readonly coloc_pre_filter_enabled: boolean;
   readonly last_checked_at: string | null;
   readonly next_check_at: string | null;
   readonly error_message: string | null;
@@ -41,6 +42,7 @@ export interface SearchProjectListingRow {
   readonly last_seen_at: string;
   readonly is_active: boolean;
   readonly email_sent: boolean;
+  readonly pre_filtered: boolean;
   readonly created_at: string;
 }
 
@@ -51,6 +53,7 @@ export interface SearchProjectCheckRow {
   readonly listings_found: number;
   readonly new_listings: number;
   readonly emails_sent: number;
+  readonly pre_filtered_count: number;
   readonly triggered_by: CheckTrigger;
   readonly error_message: string | null;
 }
@@ -69,6 +72,7 @@ export interface SearchProject {
   readonly emailNotificationsEnabled: boolean;
   readonly propertyType: PropertyInvestmentType;
   readonly rentPerUnit: number;
+  readonly colocPreFilterEnabled: boolean;
   readonly lastCheckedAt: string | null;
   readonly nextCheckAt: string | null;
   readonly errorMessage: string | null;
@@ -95,6 +99,7 @@ export interface SearchProjectListing {
   readonly lastSeenAt: string;
   readonly isActive: boolean;
   readonly emailSent: boolean;
+  readonly preFiltered: boolean;
   readonly createdAt: string;
 }
 
@@ -105,6 +110,7 @@ export interface SearchProjectCheck {
   readonly listingsFound: number;
   readonly newListings: number;
   readonly emailsSent: number;
+  readonly preFilteredCount: number;
   readonly triggeredBy: CheckTrigger;
   readonly errorMessage: string | null;
 }
@@ -120,6 +126,7 @@ export interface CreateSearchProjectInput {
   readonly emailNotificationsEnabled?: boolean;
   readonly propertyType?: PropertyInvestmentType;
   readonly rentPerUnit?: number;
+  readonly colocPreFilterEnabled?: boolean;
 }
 
 export interface UpdateSearchProjectInput {
@@ -130,6 +137,7 @@ export interface UpdateSearchProjectInput {
   readonly emailNotificationsEnabled?: boolean;
   readonly propertyType?: PropertyInvestmentType;
   readonly rentPerUnit?: number;
+  readonly colocPreFilterEnabled?: boolean;
   readonly status?: 'active' | 'paused';
 }
 
@@ -172,6 +180,7 @@ export function mapProjectRow(row: SearchProjectRow): SearchProject {
     emailNotificationsEnabled: row.email_notifications_enabled,
     propertyType: row.property_type,
     rentPerUnit: row.rent_per_unit,
+    colocPreFilterEnabled: row.coloc_pre_filter_enabled,
     lastCheckedAt: row.last_checked_at,
     nextCheckAt: row.next_check_at,
     errorMessage: row.error_message,
@@ -197,6 +206,7 @@ export function mapListingRow(row: SearchProjectListingRow): SearchProjectListin
     lastSeenAt: row.last_seen_at,
     isActive: row.is_active,
     emailSent: row.email_sent,
+    preFiltered: row.pre_filtered,
     createdAt: row.created_at,
   };
 }
@@ -209,6 +219,7 @@ export function mapCheckRow(row: SearchProjectCheckRow): SearchProjectCheck {
     listingsFound: row.listings_found,
     newListings: row.new_listings,
     emailsSent: row.emails_sent,
+    preFilteredCount: row.pre_filtered_count,
     triggeredBy: row.triggered_by,
     errorMessage: row.error_message,
   };
