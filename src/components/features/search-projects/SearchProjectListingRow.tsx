@@ -61,6 +61,11 @@ export function SearchProjectListingRow({
               Top
             </Badge>
           )}
+          {listing.preFiltered && (
+            <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0 hover:bg-amber-100">
+              Filtré
+            </Badge>
+          )}
           {!listing.isActive && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
               Inactive
@@ -79,15 +84,18 @@ export function SearchProjectListingRow({
 
         {/* Score bar */}
         <div className="flex items-center gap-2 mt-2">
-          <div className="w-32">
-            <Progress
-              value={listing.score ?? 0}
-              className="h-2"
-            />
-          </div>
-          <span className={`text-xs font-medium ${listing.score !== null && listing.score >= 70 ? 'text-emerald-600' : listing.score !== null && listing.score >= 50 ? 'text-amber-600' : 'text-slate-500'}`}>
-            {listing.score !== null ? `${listing.score}/100` : 'En cours...'}
-          </span>
+          {listing.preFiltered ? (
+            <span className="text-xs text-amber-600">Non analysé · potentiel coloc insuffisant</span>
+          ) : (
+            <>
+              <div className="w-32">
+                <Progress value={listing.score ?? 0} className="h-2" />
+              </div>
+              <span className={`text-xs font-medium ${listing.score !== null && listing.score >= 70 ? 'text-emerald-600' : listing.score !== null && listing.score >= 50 ? 'text-amber-600' : 'text-slate-500'}`}>
+                {listing.score !== null ? `${listing.score}/100` : 'En cours...'}
+              </span>
+            </>
+          )}
         </div>
 
         <div className="text-xs text-slate-400 mt-1">
