@@ -38,10 +38,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { email, name, role } = validation.data;
     const supabase = createAdminClient();
+    const appUrl = process.env['NEXT_PUBLIC_APP_URL'] || 'https://immo-score-flame.vercel.app';
 
-    // Invite user via Supabase (sends email using Supabase template)
+    // Invite user via Supabase — redirect to set-password after token verification
     const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
       data: { full_name: name },
+      redirectTo: `${appUrl}/auth/callback?next=/auth/set-password`,
     });
 
     if (inviteError) {
