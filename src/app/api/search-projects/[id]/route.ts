@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/supabase/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { prisma } from '@/lib/db/client';
 import { updateSearchProjectSchema } from '@/lib/validation/search-project-schemas';
 import type {
   SearchProjectRow,
@@ -29,6 +30,7 @@ export async function GET(
 
     const supabase = createAdminClient();
 
+    // First try as owner
     const { data: project, error } = await supabase
       .from('search_projects')
       .select('*')
@@ -36,8 +38,50 @@ export async function GET(
       .eq('user_id', user.id)
       .single();
 
+    // If not owner, check if shared with this user
     if (error || !project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      const share = await prisma.searchProjectShare.findFirst({
+        where: { projectId: params.id, sharedWithUserId: user.id },
+      });
+
+      if (!share) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      }
+
+      // Fetch project without user_id filter (shared access)
+      const { data: sharedProject, error: sharedError } = await supabase
+        .from('search_projects')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (sharedError || !sharedProject) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      }
+
+      // Return shared project (read-only: no listings mutation possible)
+      const [listingsResult, checksResult] = await Promise.all([
+        supabase
+          .from('search_project_listings')
+          .select('*')
+          .eq('project_id', params.id)
+          .order('first_seen_at', { ascending: false }),
+        supabase
+          .from('search_project_checks')
+          .select('*')
+          .eq('project_id', params.id)
+          .order('checked_at', { ascending: false })
+          .limit(50),
+      ]);
+
+      return NextResponse.json({
+        data: {
+          ...mapProjectRow(sharedProject as SearchProjectRow),
+          listings: ((listingsResult.data || []) as SearchProjectListingRow[]).map(mapListingRow),
+          checks: ((checksResult.data || []) as SearchProjectCheckRow[]).map(mapCheckRow),
+          shared: true,
+        },
+      });
     }
 
     // Fetch listings and checks in parallel
