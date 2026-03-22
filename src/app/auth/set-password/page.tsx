@@ -18,26 +18,52 @@ export default function SetPasswordPage(): JSX.Element {
   const [success, setSuccess] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
 
-  // Wait for Supabase to establish the session from the hash fragment
+  // Parse hash fragment and establish session manually
+  // createBrowserClient from @supabase/ssr does NOT auto-detect hash fragments
   useEffect(() => {
     const supabase = createClient();
 
-    // Check if session already exists
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    async function establishSession(): Promise<void> {
+      // First check if session already exists
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setSessionReady(true);
         return;
       }
 
-      // Otherwise wait for the auth state change (hash processing)
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
-          setSessionReady(true);
-        }
+      // Parse the hash fragment manually
+      const hash = window.location.hash.substring(1); // remove #
+      if (!hash) {
+        setError('Lien d\'invitation invalide ou expiré.');
+        return;
+      }
+
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (!accessToken || !refreshToken) {
+        setError('Lien d\'invitation invalide ou expiré.');
+        return;
+      }
+
+      // Set session manually from tokens
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
       });
 
-      return () => subscription.unsubscribe();
-    });
+      if (sessionError) {
+        setError('Session expirée. Demandez une nouvelle invitation.');
+        return;
+      }
+
+      // Clear the hash from URL
+      window.history.replaceState(null, '', '/auth/set-password');
+      setSessionReady(true);
+    }
+
+    establishSession();
   }, []);
 
   const isValid = password.length >= 8 && password === confirmPassword;
