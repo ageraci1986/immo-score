@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ToasterProvider } from '@/components/providers/toaster-provider';
-import { InviteRedirect } from '@/components/auth/invite-redirect';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -26,9 +25,22 @@ export default function RootLayout({
 }>): JSX.Element {
   return (
     <html lang="fr" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var h = window.location.hash;
+                if (h && h.indexOf('type=invite') !== -1) {
+                  window.location.replace('/auth/set-password' + h);
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.variable} font-sans`}>
         <QueryProvider>
-          <InviteRedirect />
           {children}
           <ToasterProvider />
         </QueryProvider>
