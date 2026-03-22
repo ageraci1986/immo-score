@@ -31,7 +31,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 var h = window.location.hash;
-                if (h && h.indexOf('type=invite') !== -1) {
+                if (h && h.indexOf('type=invite') !== -1 && window.location.pathname !== '/auth/set-password') {
                   window.location.replace('/auth/set-password' + h);
                 }
               })();
