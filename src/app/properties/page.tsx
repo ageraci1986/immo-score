@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
+import { RoleGuard } from '@/components/auth/role-guard';
 import type { Property } from '@/types';
 
 type FilterStatus = 'all' | 'analyzing' | 'favorites' | 'offers';
@@ -142,6 +143,7 @@ export default function PropertiesPage(): JSX.Element {
   };
 
   return (
+    <RoleGuard allowedRoles={['admin', 'advanced', 'user_basic']}>
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* SIDEBAR */}
       <Sidebar />
@@ -323,6 +325,7 @@ export default function PropertiesPage(): JSX.Element {
       {/* Modal */}
       <AddPropertyModal open={isModalOpen} onOpenChange={setIsModalOpen} />
     </div>
+    </RoleGuard>
   );
 }
 

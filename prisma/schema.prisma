@@ -36,12 +36,12 @@ model User {
 // Sharing a search project with another user
 model SearchProjectShare {
   id               String   @id @default(cuid())
-  projectId        String   // UUID of search_projects table (Supabase)
+  projectId        String   @map("project_id")
   sharedWithUser   User     @relation("SharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
-  sharedWithUserId String
+  sharedWithUserId String   @map("shared_with_user_id")
   sharedByUser     User     @relation("SharedBy", fields: [sharedByUserId], references: [id], onDelete: Cascade)
-  sharedByUserId   String
-  createdAt        DateTime @default(now())
+  sharedByUserId   String   @map("shared_by_user_id")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   @@unique([projectId, sharedWithUserId])
   @@index([sharedWithUserId])

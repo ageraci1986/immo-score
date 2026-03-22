@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Share2, X, UserPlus, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -85,8 +86,14 @@ export function ShareProjectDialog({ projectId, projectName }: ShareProjectDialo
       });
       if (res.ok) {
         setSelectedUserId('');
+        toast.success('Projet partagé avec succès');
         fetchData();
+      } else {
+        const json = await res.json().catch(() => ({}));
+        toast.error(json.error || 'Erreur lors du partage');
       }
+    } catch {
+      toast.error('Erreur réseau');
     } finally {
       setAdding(false);
     }

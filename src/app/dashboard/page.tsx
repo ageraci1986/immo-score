@@ -9,10 +9,15 @@ import { AddPropertyModal } from '@/components/features/add-property-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canAccessProperties } from '@/lib/permissions';
 import type { Property } from '@/types';
 
 export default function DashboardPage(): JSX.Element {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user: roleUser } = useUserRole();
+  const role = roleUser?.role ?? 'viewer';
+  const showProperties = canAccessProperties(role);
   const { data: properties, isLoading, error } = useProperties();
 
   // Calculate stats
@@ -71,13 +76,15 @@ export default function DashboardPage(): JSX.Element {
         {/* Header */}
         <header className="h-20 glass-effect sticky top-0 z-10 border-b border-slate-200 px-8 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-800">Vue d&apos;ensemble</h2>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-gradient px-5 py-2.5 rounded-lg text-sm font-medium flex items-center"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Ajouter un bien
-          </button>
+          {showProperties && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="btn-gradient px-5 py-2.5 rounded-lg text-sm font-medium flex items-center"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Ajouter un bien
+            </button>
+          )}
         </header>
 
         <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -184,11 +191,15 @@ export default function DashboardPage(): JSX.Element {
               {properties.slice(0, 5).map((property) => (
                 <PropertyCard key={property.id} property={property} />
               ))}
+              {showProperties && <AddPropertyCard onClick={() => setIsModalOpen(true)} />}
+            </div>
+          ) : showProperties ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
               <AddPropertyCard onClick={() => setIsModalOpen(true)} />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
-              <AddPropertyCard onClick={() => setIsModalOpen(true)} />
+            <div className="text-center py-12 text-slate-500">
+              <p>Aucun projet partagé pour le moment.</p>
             </div>
           )}
         </div>

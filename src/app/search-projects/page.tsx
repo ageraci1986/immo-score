@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Radar } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
+import { RoleGuard } from '@/components/auth/role-guard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SearchProjectCard } from '@/components/features/search-projects/SearchProjectCard';
@@ -55,6 +56,7 @@ export default function SearchProjectsPage(): JSX.Element {
   };
 
   return (
+    <RoleGuard allowedRoles={['admin', 'advanced']}>
     <div className="flex h-screen bg-slate-50">
       <Sidebar />
 
@@ -134,6 +136,7 @@ export default function SearchProjectsPage(): JSX.Element {
         userEmail={userEmail}
       />
     </div>
+    </RoleGuard>
   );
 }
 
