@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,12 +16,35 @@ export default function SetPasswordPage(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+
+  // Wait for Supabase to establish the session from the hash fragment
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Check if session already exists
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setSessionReady(true);
+        return;
+      }
+
+      // Otherwise wait for the auth state change (hash processing)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+          setSessionReady(true);
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    });
+  }, []);
 
   const isValid = password.length >= 8 && password === confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    if (!isValid) return;
+    if (!isValid || !sessionReady) return;
 
     setLoading(true);
     setError(null);
@@ -57,7 +80,12 @@ export default function SetPasswordPage(): JSX.Element {
         </div>
 
         <Card className="p-8">
-          {success ? (
+          {!sessionReady ? (
+            <div className="flex flex-col items-center py-8 gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+              <p className="text-sm text-slate-500">Vérification de votre invitation...</p>
+            </div>
+          ) : success ? (
             <div className="text-center py-4">
               <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-4">
                 <Check className="w-6 h-6 text-green-600" />
