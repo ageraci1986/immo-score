@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { addPropertiesSchema } from '@/lib/validation/schemas';
 import { getAuthUser } from '@/lib/supabase/auth';
 import type { PropertyStatus } from '@/types';
@@ -18,7 +19,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') as PropertyStatus | null;
 
-    const properties = await prisma.property.findMany({
+    // Fetch own properties
+    const ownProperties = await prisma.property.findMany({
       where: {
         userId: user.id,
         ...(status ? { status } : {}),
@@ -26,6 +28,46 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
+
+    // Fetch property IDs from shared projects
+    const shares = await prisma.searchProjectShare.findMany({
+      where: { sharedWithUserId: user.id },
+      select: { projectId: true },
+    });
+
+    let sharedProperties: typeof ownProperties = [];
+    if (shares.length > 0) {
+      const sharedProjectIds = shares.map((s) => s.projectId);
+      const supabase = createAdminClient();
+
+      // Get property IDs from shared project listings
+      const { data: listings } = await supabase
+        .from('search_project_listings')
+        .select('property_id')
+        .in('project_id', sharedProjectIds)
+        .not('property_id', 'is', null);
+
+      const sharedPropertyIds = (listings ?? [])
+        .map((l) => l.property_id as string)
+        .filter(Boolean);
+
+      if (sharedPropertyIds.length > 0) {
+        const ownIds = new Set(ownProperties.map((p) => p.id));
+        const uniqueSharedIds = sharedPropertyIds.filter((id) => !ownIds.has(id));
+
+        if (uniqueSharedIds.length > 0) {
+          sharedProperties = await prisma.property.findMany({
+            where: {
+              id: { in: uniqueSharedIds },
+              ...(status ? { status } : {}),
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+        }
+      }
+    }
+
+    const properties = [...ownProperties, ...sharedProperties];
 
     return NextResponse.json({ properties });
   } catch (error) {

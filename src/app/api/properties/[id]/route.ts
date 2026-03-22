@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { updateRentabilityParamsSchema } from '@/lib/validation/schemas';
 import { calculateRentabilityExtended, buildExtendedParams } from '@/lib/rentability/calculate';
 import { getAuthUser } from '@/lib/supabase/auth';
@@ -23,14 +24,34 @@ export async function GET(
       where: { id: params.id },
     });
 
-    if (!property || property.userId !== user.id) {
-      return NextResponse.json(
-        { error: 'Property not found' },
-        { status: 404 }
-      );
+    if (!property) {
+      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ property });
+    // Allow access if owner
+    if (property.userId === user.id) {
+      return NextResponse.json({ property });
+    }
+
+    // Allow access if property belongs to a shared project
+    const supabase = createAdminClient();
+    const { data: listing } = await supabase
+      .from('search_project_listings')
+      .select('project_id')
+      .eq('property_id', property.id)
+      .limit(1)
+      .single();
+
+    if (listing) {
+      const share = await prisma.searchProjectShare.findFirst({
+        where: { projectId: listing.project_id, sharedWithUserId: user.id },
+      });
+      if (share) {
+        return NextResponse.json({ property });
+      }
+    }
+
+    return NextResponse.json({ error: 'Property not found' }, { status: 404 });
   } catch (error) {
     console.error('Failed to fetch property:', error);
     return NextResponse.json(
