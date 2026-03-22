@@ -4,7 +4,6 @@ import path from 'path';
 import os from 'os';
 import fs from 'fs';
 
-const MAX_PAGES = 5;
 const PAGE_DELAY_MIN = 2000;
 const PAGE_DELAY_MAX = 5000;
 
@@ -85,7 +84,7 @@ export async function scrapeImmowebSearchPage(
     let currentPageNum = 1;
     let currentUrl = url;
 
-    while (currentPageNum <= MAX_PAGES) {
+    while (true) {
       console.log(`[ImmowebSearch] Scraping page ${currentPageNum}: ${currentUrl}`);
 
       // Human-like delay before navigation

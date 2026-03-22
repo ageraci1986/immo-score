@@ -18,7 +18,6 @@ interface SearchResult {
   thumbnailUrl: string | null;
 }
 
-const MAX_PAGES = 5;
 const PAGE_DELAY_MIN = 2000;
 const PAGE_DELAY_MAX = 5000;
 
@@ -45,7 +44,7 @@ export async function scrapeSearchPage(url: string): Promise<SearchResult[]> {
     let currentPageNum = 1;
     let currentUrl = normalizedUrl;
 
-    while (currentPageNum <= MAX_PAGES) {
+    while (true) {
       console.log(`[Search] Page ${currentPageNum}: ${currentUrl}`);
 
       await randomDelay(1500, 3000);
