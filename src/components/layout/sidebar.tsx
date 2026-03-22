@@ -19,7 +19,6 @@ import { createClient } from '@/lib/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import {
   canManageUsers,
-  canAccessSearchProjects,
   canAccessSettings,
   canAccessProperties,
 } from '@/lib/permissions';
@@ -99,7 +98,7 @@ export function Sidebar(): JSX.Element {
   const navItems: NavItem[] = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
     ...(canAccessProperties(role) ? [{ href: '/properties', label: 'Mes Biens', icon: Home }] : []),
-    ...(canAccessSearchProjects(role) ? [{ href: '/search-projects', label: 'Veille Immobilière', icon: Radar }] : []),
+    { href: '/search-projects', label: 'Veille Immobilière', icon: Radar },
     ...(canAccessProperties(role) ? [{ href: '/reports', label: 'Rapports', icon: BarChart3 }] : []),
     ...(canManageUsers(role) ? [{ href: '/admin/users', label: 'Utilisateurs', icon: Users }] : []),
   ];
@@ -195,7 +194,7 @@ export function MobileSidebar(): JSX.Element {
   const navItems: NavItem[] = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
     ...(canAccessProperties(role) ? [{ href: '/properties', label: 'Mes Biens', icon: Home }] : []),
-    ...(canAccessSearchProjects(role) ? [{ href: '/search-projects', label: 'Veille Immobilière', icon: Radar }] : []),
+    { href: '/search-projects', label: 'Veille Immobilière', icon: Radar },
     ...(canAccessProperties(role) ? [{ href: '/reports', label: 'Rapports', icon: BarChart3 }] : []),
     ...(canManageUsers(role) ? [{ href: '/admin/users', label: 'Utilisateurs', icon: Users }] : []),
     ...(canAccessSettings(role) ? [{ href: '/settings', label: 'Réglages', icon: Settings }] : []),

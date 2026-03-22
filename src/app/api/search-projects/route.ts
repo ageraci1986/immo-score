@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/supabase/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { prisma } from '@/lib/db/client';
 import { createSearchProjectSchema } from '@/lib/validation/search-project-schemas';
 import type { SearchProjectRow } from '@/types/search-projects';
 import { mapProjectRow } from '@/types/search-projects';
@@ -20,12 +21,42 @@ export async function GET(): Promise<NextResponse> {
 
     const supabase = createAdminClient();
 
-    // Fetch projects
-    const { data: projects, error } = await supabase
+    // Fetch user's own projects
+    const { data: ownProjects, error } = await supabase
       .from('search_projects')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
+
+    // Fetch shared project IDs from Prisma
+    const shares = await prisma.searchProjectShare.findMany({
+      where: { sharedWithUserId: user.id },
+      select: { projectId: true },
+    });
+    const sharedProjectIds = shares.map((s) => s.projectId);
+
+    // Fetch shared projects from Supabase
+    let sharedProjects: SearchProjectRow[] = [];
+    if (sharedProjectIds.length > 0) {
+      const { data: sp } = await supabase
+        .from('search_projects')
+        .select('*')
+        .in('id', sharedProjectIds)
+        .order('created_at', { ascending: false });
+      sharedProjects = (sp ?? []) as SearchProjectRow[];
+    }
+
+    // Merge and deduplicate
+    const allProjectsMap = new Map<string, SearchProjectRow>();
+    for (const p of (ownProjects ?? []) as SearchProjectRow[]) {
+      allProjectsMap.set(p.id, p);
+    }
+    for (const p of sharedProjects) {
+      if (!allProjectsMap.has(p.id)) {
+        allProjectsMap.set(p.id, p);
+      }
+    }
+    const projects = Array.from(allProjectsMap.values());
 
     if (error) {
       console.error('Failed to fetch search projects:', error);

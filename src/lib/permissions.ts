@@ -19,6 +19,10 @@ export function canAccessSearchProjects(role: UserRole): boolean {
   return role === 'admin' || role === 'advanced';
 }
 
+export function canViewSharedProjects(_role: UserRole): boolean {
+  return true; // all roles can see projects shared with them
+}
+
 export function canShareProjects(role: UserRole): boolean {
   return role === 'admin';
 }

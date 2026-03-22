@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Radar } from 'lucide-react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { RoleGuard } from '@/components/auth/role-guard';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canAccessSearchProjects } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SearchProjectCard } from '@/components/features/search-projects/SearchProjectCard';
@@ -23,6 +25,8 @@ export default function SearchProjectsPage(): JSX.Element {
   const createProject = useCreateSearchProject();
   const deleteProject = useDeleteSearchProject();
   
+  const { user: roleUser } = useUserRole();
+  const canCreate = canAccessSearchProjects(roleUser?.role ?? 'viewer');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [runningCheckId, setRunningCheckId] = useState<string | null>(null);
@@ -56,7 +60,7 @@ export default function SearchProjectsPage(): JSX.Element {
   };
 
   return (
-    <RoleGuard allowedRoles={['admin', 'advanced']}>
+    <RoleGuard allowedRoles={['admin', 'advanced', 'viewer']}>
     <div className="flex h-screen bg-slate-50">
       <Sidebar />
 
@@ -70,10 +74,12 @@ export default function SearchProjectsPage(): JSX.Element {
                 Surveillez automatiquement les nouvelles annonces sur Immoweb
               </p>
             </div>
-            <Button onClick={() => setIsModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau projet
-            </Button>
+            {canCreate && (
+              <Button onClick={() => setIsModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau projet
+              </Button>
+            )}
           </div>
 
           {/* Loading */}
@@ -97,16 +103,19 @@ export default function SearchProjectsPage(): JSX.Element {
             <div className="rounded-lg border-2 border-dashed border-slate-200 p-12 text-center">
               <Radar className="h-12 w-12 mx-auto text-slate-300 mb-4" />
               <h3 className="text-lg font-semibold text-slate-700">
-                Aucun projet de recherche
+                {canCreate ? 'Aucun projet de recherche' : 'Aucun projet partagé'}
               </h3>
               <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto">
-                Créez votre premier projet de veille en collant une URL de recherche Immoweb.
-                L&apos;app analysera automatiquement les nouvelles annonces.
+                {canCreate
+                  ? "Créez votre premier projet de veille en collant une URL de recherche Immoweb. L'app analysera automatiquement les nouvelles annonces."
+                  : "Aucun projet de veille ne vous a été partagé pour le moment."}
               </p>
-              <Button className="mt-6" onClick={() => setIsModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Créer votre premier projet
-              </Button>
+              {canCreate && (
+                <Button className="mt-6" onClick={() => setIsModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Créer votre premier projet
+                </Button>
+              )}
             </div>
           )}
 
