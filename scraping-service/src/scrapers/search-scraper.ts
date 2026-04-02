@@ -18,110 +18,134 @@ interface SearchResult {
   thumbnailUrl: string | null;
 }
 
-const PAGE_DELAY_MIN = 2000;
-const PAGE_DELAY_MAX = 5000;
+const PAGE_DELAY_MIN = 5000;
+const PAGE_DELAY_MAX = 12000;
+const MAX_CAPTCHA_RETRIES = 2;
 
 /**
  * Scrapes an Immoweb search results page to extract listing cards.
+ * On CAPTCHA, retries with a fresh browser session (new proxy IP).
  */
 export async function scrapeSearchPage(url: string): Promise<SearchResult[]> {
-  let browser: Browser | null = null;
-  let context: BrowserContext | null = null;
-
   // Remove orderBy param — causes redirect that times out through proxy
   const cleanUrl = new URL(url);
   cleanUrl.searchParams.delete('orderBy');
   const normalizedUrl = cleanUrl.toString();
 
-  try {
-    browser = await launchBrowser();
-    context = await createStealthContext(browser);
-    const page = await context.newPage();
-    await applyStealthScripts(page);
+  const allResults: SearchResult[] = [];
+  const seenIds = new Set<string>();
+  let captchaRetries = 0;
+  let startPageNum = 1;
+  let startUrl = normalizedUrl;
 
-    const allResults: SearchResult[] = [];
-    const seenIds = new Set<string>();
-    let currentPageNum = 1;
-    let currentUrl = normalizedUrl;
+  while (captchaRetries <= MAX_CAPTCHA_RETRIES) {
+    let browser: Browser | null = null;
+    let context: BrowserContext | null = null;
 
-    while (true) {
-      console.log(`[Search] Page ${currentPageNum}: ${currentUrl}`);
+    try {
+      browser = await launchBrowser();
+      context = await createStealthContext(browser);
+      const page = await context.newPage();
+      await applyStealthScripts(page);
 
-      await randomDelay(1500, 3000);
+      let currentPageNum = startPageNum;
+      let currentUrl = startUrl;
 
-      await page.goto(currentUrl, {
-        waitUntil: 'domcontentloaded',
-        timeout: 60000,
-      });
+      while (true) {
+        console.log(`[Search] Page ${currentPageNum}: ${currentUrl}`);
 
-      if (currentPageNum === 1) {
-        await dismissCookieBanner(page);
-      }
+        await randomDelay(3000, 6000);
 
-      // Check for CAPTCHA
-      const blocked = await checkForCaptcha(page);
-      if (blocked) {
-        if (allResults.length > 0) {
+        await page.goto(currentUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: 60000,
+        });
+
+        if (currentPageNum === startPageNum) {
+          await dismissCookieBanner(page);
+        }
+
+        // Check for CAPTCHA
+        const blocked = await checkForCaptcha(page);
+        if (blocked) {
+          if (allResults.length === 0 && captchaRetries >= MAX_CAPTCHA_RETRIES) {
+            throw new Error('Blocked by DataDome CAPTCHA after retries — stealth was not enough');
+          }
+          if (allResults.length === 0) {
+            captchaRetries++;
+            console.log(`[Search] CAPTCHA on page ${currentPageNum} — retrying with new IP (attempt ${captchaRetries}/${MAX_CAPTCHA_RETRIES})`);
+            await randomDelay(10000, 20000);
+            break;
+          }
           console.log(`[Search] CAPTCHA on page ${currentPageNum} — returning ${allResults.length} results collected so far`);
+          return allResults;
+        }
+
+        await page.waitForSelector('article[class*="card--result"]', { timeout: 15000 }).catch(() => {
+          console.log('[Search] No card--result elements found');
+        });
+
+        await simulateHumanBehavior(page);
+
+        const pageResults = await extractRealResults(page);
+
+        const newResults = pageResults.filter((r) => {
+          if (seenIds.has(r.immowebId)) return false;
+          seenIds.add(r.immowebId);
+          return true;
+        });
+
+        console.log(`[Search] Page ${currentPageNum}: ${pageResults.length} results, ${newResults.length} new`);
+
+        if (newResults.length === 0 && currentPageNum === 1) {
+          const debugInfo = await page.evaluate(() => ({
+            url: window.location.href,
+            isCaptcha: document.body.innerHTML.includes('captcha-delivery.com'),
+            articleCount: document.querySelectorAll('article').length,
+            cardResultCount: document.querySelectorAll('article[class*="card--result"]').length,
+          }));
+          console.log('[Search] Debug:', JSON.stringify(debugInfo));
+
+          throw new Error(
+            "Aucune annonce trouvée sur la page de recherche. Immoweb a peut-être bloqué la requête ou l'URL est invalide."
+          );
+        }
+
+        allResults.push(...newResults);
+
+        if (newResults.length === 0) {
+          console.log('[Search] No new results, stopping pagination');
           break;
         }
-        throw new Error('Blocked by DataDome CAPTCHA — stealth was not enough');
+
+        const nextPageUrl = await findNextPageLink(page);
+        if (!nextPageUrl) {
+          console.log('[Search] No next page link, done');
+          break;
+        }
+
+        // Remember where we are in case we need to retry
+        startPageNum = currentPageNum + 1;
+        startUrl = nextPageUrl;
+
+        currentUrl = nextPageUrl;
+        currentPageNum++;
+        await randomDelay(PAGE_DELAY_MIN, PAGE_DELAY_MAX);
       }
 
-      await page.waitForSelector('article[class*="card--result"]', { timeout: 15000 }).catch(() => {
-        console.log('[Search] No card--result elements found');
-      });
-
-      await simulateHumanBehavior(page);
-
-      const pageResults = await extractRealResults(page);
-
-      const newResults = pageResults.filter((r) => {
-        if (seenIds.has(r.immowebId)) return false;
-        seenIds.add(r.immowebId);
-        return true;
-      });
-
-      console.log(`[Search] Page ${currentPageNum}: ${pageResults.length} results, ${newResults.length} new`);
-
-      if (newResults.length === 0 && currentPageNum === 1) {
-        const debugInfo = await page.evaluate(() => ({
-          url: window.location.href,
-          isCaptcha: document.body.innerHTML.includes('captcha-delivery.com'),
-          articleCount: document.querySelectorAll('article').length,
-          cardResultCount: document.querySelectorAll('article[class*="card--result"]').length,
-        }));
-        console.log('[Search] Debug:', JSON.stringify(debugInfo));
-
-        throw new Error(
-          "Aucune annonce trouvée sur la page de recherche. Immoweb a peut-être bloqué la requête ou l'URL est invalide."
-        );
+      // If inner loop finished without CAPTCHA, we're done
+      if (allResults.length > 0 || captchaRetries > MAX_CAPTCHA_RETRIES) {
+        console.log(`[Search] Total: ${allResults.length} listings across ${startPageNum - 1} page(s)`);
+        return allResults;
       }
-
-      allResults.push(...newResults);
-
-      if (newResults.length === 0) {
-        console.log('[Search] No new results, stopping pagination');
-        break;
-      }
-
-      const nextPageUrl = await findNextPageLink(page);
-      if (!nextPageUrl) {
-        console.log('[Search] No next page link, done');
-        break;
-      }
-
-      currentUrl = nextPageUrl;
-      currentPageNum++;
-      await randomDelay(PAGE_DELAY_MIN, PAGE_DELAY_MAX);
+    } finally {
+      try { if (context) await context.close(); } catch (e) { console.log('[Search] context.close error (ignored):', e); }
+      try { if (browser) await browser.close(); } catch (e) { console.log('[Search] browser.close error (ignored):', e); }
     }
-
-    console.log(`[Search] Total: ${allResults.length} listings across ${currentPageNum} page(s)`);
-    return allResults;
-  } finally {
-    try { if (context) await context.close(); } catch (e) { console.log('[Search] context.close error (ignored):', e); }
-    try { if (browser) await browser.close(); } catch (e) { console.log('[Search] browser.close error (ignored):', e); }
   }
+
+  console.log(`[Search] Total: ${allResults.length} listings`);
+  return allResults;
 }
 
 async function extractRealResults(page: Page): Promise<SearchResult[]> {
