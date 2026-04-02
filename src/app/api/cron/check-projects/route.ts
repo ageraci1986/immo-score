@@ -6,9 +6,15 @@ const MAX_CONCURRENT_PROJECTS = 5;
 
 async function handleCron(request: NextRequest): Promise<NextResponse> {
   try {
-    // Verify cron secret
+    // Verify cron secret — Vercel Cron sends Authorization: Bearer <CRON_SECRET>
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env['CRON_SECRET'];
+
+    console.log('[Cron] Auth check:', {
+      hasAuthHeader: !!authHeader,
+      hasCronSecret: !!cronSecret,
+      match: authHeader === `Bearer ${cronSecret}`,
+    });
 
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
