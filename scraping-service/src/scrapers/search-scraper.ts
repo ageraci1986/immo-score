@@ -61,6 +61,10 @@ export async function scrapeSearchPage(url: string): Promise<SearchResult[]> {
       // Check for CAPTCHA
       const blocked = await checkForCaptcha(page);
       if (blocked) {
+        if (allResults.length > 0) {
+          console.log(`[Search] CAPTCHA on page ${currentPageNum} — returning ${allResults.length} results collected so far`);
+          break;
+        }
         throw new Error('Blocked by DataDome CAPTCHA — stealth was not enough');
       }
 
